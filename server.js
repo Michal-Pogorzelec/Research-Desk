@@ -4,9 +4,9 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { buildHtml, SRC_DIR, OUT_FILE: APP_FILE } = require('./build');
 
 const PORT = Number(process.env.PORT) || 8765;
-const APP_FILE = path.join(__dirname, 'Research Desk offline.html');
 const DB_DIR = path.join(__dirname, 'db');
 const PDF_DIR = path.join(DB_DIR, 'pdf-library');
 const NOTES_DIR = path.join(DB_DIR, 'notes');
@@ -135,6 +135,9 @@ async function handle(req, res) {
   const pathname = decodeURIComponent(url.pathname);
 
   if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
+    // Built fresh from src/ on every load, so source edits show up after a page reload;
+    // without src/ the packed single file is served as it is.
+    if (fs.existsSync(SRC_DIR)) return send(res, 200, buildHtml(), 'text/html; charset=utf-8');
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     return fs.createReadStream(APP_FILE).pipe(res);
   }

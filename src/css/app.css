@@ -1,0 +1,94 @@
+:root {
+  --color-danger: #d44c47;
+}
+html, body { margin: 0; background: var(--color-bg); }
+button, input[type="date"] { font-family: var(--font-body); }
+a { color: var(--color-accent-700); }
+a:hover { color: var(--color-accent); }
+h1 { text-wrap: balance; }
+* { scrollbar-width: thin; scrollbar-color: var(--color-neutral-300) transparent; }
+
+/* Locked entries (edit mode off): flat grey fields instead of white ones. */
+input.input:read-only, textarea.input:read-only, select.input:disabled {
+  opacity: 1; color: var(--color-text); cursor: default;
+  background: var(--color-neutral-100); border-color: transparent; box-shadow: none;
+}
+select.input:disabled { appearance: none; }
+/* Hover tint laid over an inline background (an inset shadow does not replace the active/selected colour). */
+.nav-item:hover, .cal-day:hover, .chip:hover, .tab-star:hover, .tab-label:hover { box-shadow: inset 0 0 0 100px var(--color-hover); }
+
+/* — sidebar — */
+.sidebar {
+  display: flex; flex-direction: column; gap: var(--space-6);
+  padding: 14px 10px var(--space-4);
+  background: var(--color-surface); border-right: 1px solid var(--color-divider);
+  position: sticky; top: 0; height: 100vh; overflow: auto;
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 4px 6px; }
+.brand-mark {
+  flex: none; width: 32px; height: 32px; display: grid; place-items: center;
+  border-radius: var(--radius-md); background: var(--color-neutral-300);
+  color: var(--color-neutral-700); font-size: 17px; font-weight: 500;
+}
+.brand-name { font-size: 14px; font-weight: 600; line-height: 1.25; }
+.brand-sub { font-size: 11px; color: var(--color-neutral-600); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-nav { display: flex; flex-direction: column; gap: 1px; }
+.nav-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
+  padding: 6px 10px; border: 0; border-radius: var(--radius-md);
+  font-size: 14px; font-weight: 500; text-align: left; cursor: pointer;
+  transition: background-color .12s ease;
+}
+.nav-count { font-size: 12px; font-weight: 400; color: var(--color-neutral-500); font-variant-numeric: tabular-nums; }
+
+/* — chips: task filters, language switch, publication tabs — */
+.chip, .tab-star, .tab-label { cursor: pointer; font-size: 13px; font-weight: 500; transition: background-color .12s ease; }
+.chip { padding: 6px 14px; border: 1px solid var(--color-divider); border-radius: var(--radius-md); }
+.chip:hover, .tab-chip:hover { border-color: var(--color-border-strong); }
+.tab-chip:hover .tab-star, .tab-chip:hover .tab-label { border-color: var(--color-border-strong); }
+.tab-chip { display: flex; align-items: stretch; overflow: hidden; border: 1px solid var(--color-divider); border-radius: var(--radius-md); }
+.tab-star { border: 0; border-right: 1px solid var(--color-divider); padding: 6px 9px; font-size: 13px; }
+.tab-label { border: 0; padding: 6px 12px; }
+
+/* — calendar: popover with the day's entries, shown on hover / keyboard focus — */
+.cal-pop {
+  position: absolute; bottom: calc(100% + 8px); z-index: 20;
+  width: 260px; max-width: calc(100vw - 32px);
+  display: flex; flex-direction: column; gap: 8px; padding: 12px 14px;
+  background: var(--color-bg); border: 1px solid var(--color-divider); border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  color: var(--color-text); font-size: 13px; font-weight: 400; line-height: 1.35; text-align: left; cursor: default;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transform: translate(var(--pop-x, 0), 6px) scale(.98);
+  transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
+}
+.cal-pop::after {
+  content: ""; position: absolute; top: 100%; width: 10px; height: 10px; margin-top: -5px;
+  background: var(--color-bg); border-right: 1px solid var(--color-divider); border-bottom: 1px solid var(--color-divider);
+  transform: rotate(45deg);
+}
+.cal-pop-center { left: 50%; --pop-x: -50%; }
+.cal-pop-center::after { left: calc(50% - 5px); }
+.cal-pop-left { left: 0; }
+.cal-pop-left::after { left: 22px; }
+.cal-pop-right { right: 0; }
+.cal-pop-right::after { right: 22px; }
+.cal-day:hover .cal-pop, .cal-day:focus-visible .cal-pop {
+  opacity: 1; visibility: visible; transform: translate(var(--pop-x, 0), 0) scale(1);
+  transition: opacity .18s ease .12s, transform .18s ease .12s, visibility 0s linear .12s;
+}
+.cal-pop-date { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 600; }
+.cal-pop-rel { font-weight: 400; color: var(--color-neutral-600); white-space: nowrap; }
+.cal-pop-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-top: 8px; border-top: 1px solid var(--color-divider); }
+.cal-pop-what { min-width: 0; overflow-wrap: anywhere; }
+.cal-pop-item .tag { flex: none; }
+
+/* — checkboxes (tasks, milestones) — */
+.check {
+  flex: none; width: 18px; height: 18px; margin-top: 2px; display: grid; place-items: center;
+  border: 1.5px solid var(--color-border-strong); border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 11px; font-weight: 700; line-height: 1; color: #fff;
+  transition: background-color .12s ease, border-color .12s ease;
+}
+.check:hover { border-color: var(--color-accent); }
+.check:not(:empty) { border-color: var(--color-accent); }

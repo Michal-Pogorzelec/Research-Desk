@@ -8,5 +8,11 @@ if errorlevel 1 (
   exit /b 1
 )
 title Research Desk
+rem Repacks src\ into "Research Desk offline.html", so the single file always matches the sources.
+node build.js
+if errorlevel 1 (
+  pause
+  exit /b 1
+)
 node server.js --open
 pause

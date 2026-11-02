@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research Desk</title>
+<link rel="stylesheet" href="css/fonts.css">
+<script src="vendor/react.production.min.js"></script>
+<script src="vendor/react-dom.production.min.js"></script>
+<!-- Tells dc-runtime that the page is self-contained (otherwise it re-fetches the page to re-read the template). -->
+<script>window.__resources = {};</script>
+<script src="vendor/dc-runtime.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="stylesheet" href="css/design-system.css">
+<link rel="stylesheet" href="css/app.css">
+</helmet>
+
+<div style="display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh;align-items:stretch;background:var(--color-bg);color:var(--color-text)">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">R</div>
+      <div style="min-width:0">
+        <div class="brand-name">Research Desk</div>
+        <div class="brand-sub">{{ t.offline }}</div>
+      </div>
+    </div>
+
+    <nav class="side-nav">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="7">
+        <button type="button" sc-camel-on-click="{{ item.go }}" class="nav-item" style="color:{{ item.fg }};background:{{ item.bg }}">
+          <span>{{ item.label }}</span>
+          <span class="nav-count">{{ item.count }}</span>
+        </button>
+      </sc-for>
+    </nav>
+
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:var(--space-2);font-size:11px">
+      <div class="text-muted" style="line-height:1.35">{{ t.database }}<br>{{ t.autosave }} {{ saveInfo }}<br>{{ dbInfo }}</div>
+      <div class="text-muted" style="line-height:1.35;word-break:break-word">{{ t.dataLabel }} {{ dataFolder }}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <button type="button" class="{{ editButtonClass }}" sc-camel-on-click="{{ toggleEdit }}">{{ editButtonLabel }}</button>
+        <div class="text-muted" style="font-size:11px">{{ editModeText }}</div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="padding:36px 48px 72px;min-width:0">
+
+    <sc-if value="{{ banner }}">
+      <div class="card blueprint" style="margin-bottom:var(--space-6);border-color:var(--color-accent)">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div class="card-kicker">{{ bannerTitle }}</div>
+        <p class="card-body" style="max-width:75ch;margin:0">{{ bannerText }}</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ v.dashboard }}" hint-placeholder-val="{{ true }}">
+      <section>
+        <header style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-6)">
+          <div style="max-width:60ch">
+            <div class="eyebrow">{{ t.dashboard }}</div>
+            <h1 style="margin:0;text-wrap:pretty">{{ projectName }}</h1>
+          </div>
+          <div style="text-align:right;font-size:13px;min-width:240px" class="text-muted">
+            <div>{{ phdStage }}</div>
+            <div>{{ planSummary }}</div>
+            <div>{{ deadlinesSummary }}</div>
+          </div>
+        </header>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:var(--space-6);align-items:start">
+
+          <div class="card blueprint" style="grid-column:1/-1;order:9">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3)">
+              <div>
+                <div class="card-kicker">{{ t.calendar }}</div>
+                <div style="font-family:var(--font-heading);font-weight:600;font-size:22px;text-transform:capitalize">{{ cal.month }}</div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button type="button" class="btn btn-secondary" sc-camel-on-click="{{ cal.prev }}">‹</button>
+                <button type="button" class="btn btn-secondary" sc-camel-on-click="{{ cal.today }}">{{ t.today }}</button>
+                <button type="button" class="btn btn-secondary" sc-camel-on-click="{{ cal.next }}">›</button>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:var(--space-2)">
+              <sc-for list="{{ cal.weekdays }}" as="weekday" hint-placeholder-count="7"><div class="eyebrow" style="padding:2px 4px">{{ weekday.name }}</div></sc-for>
+              <sc-for list="{{ cal.days }}" as="day" hint-placeholder-count="35">
+                <button type="button" sc-camel-on-click="{{ day.select }}" class="cal-day" style="position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;min-height:60px;padding:6px 8px;border-radius:8px;cursor:pointer;font-family:var(--font-body);font-weight:500;font-size:13px;text-align:left;border:1px solid {{ day.border }};color:{{ day.fg }};background:{{ day.bg }}">
+                  <span style="display:flex;justify-content:space-between;align-items:baseline">
+                    <span>{{ day.number }}</span>
+                    <span style="font-family:var(--font-body);font-size:10px;color:var(--color-accent-700)">{{ day.count }}</span>
+                  </span>
+                  <span style="height:4px;border-radius:2px;background:{{ day.bar }}"></span>
+                  <sc-if value="{{ day.hasEvents }}">
+                    <span class="cal-pop cal-pop-{{ day.popAlign }}" role="tooltip">
+                      <span class="cal-pop-date">{{ day.label }}<span class="cal-pop-rel">{{ day.relative }}</span></span>
+                      <sc-for list="{{ day.events }}" as="dayEvent" hint-placeholder-count="2">
+                        <span class="cal-pop-item">
+                          <span class="cal-pop-what">{{ dayEvent.what }}</span>
+                          <span class="tag tag-neutral">{{ dayEvent.module }}</span>
+                        </span>
+                      </sc-for>
+                    </span>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </div>
+
+            <div style="margin-top:var(--space-3)">
+              <div class="eyebrow" style="color:var(--color-text);font-weight:600">{{ cal.selectedLabel }}</div>
+              <sc-for list="{{ cal.events }}" as="event" hint-placeholder-count="2">
+                <div style="display:flex;justify-content:space-between;gap:var(--space-3);padding:5px 0;border-bottom:1px solid color-mix(in srgb, var(--color-text) 8%, transparent)">
+                  <span style="font-size:13px">{{ event.what }}</span>
+                  <span class="tag tag-neutral" style="flex:none">{{ event.module }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ cal.noEvents }}">
+                <p class="card-body" style="margin:4px 0 0">{{ t.noEvents }}</p>
+              </sc-if>
+            </div>
+          </div>
+
+          <div class="card blueprint">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div class="card-kicker">{{ t.upcomingDeadlines }}</div>
+            <sc-for list="{{ upcoming }}" as="term" hint-placeholder-count="4">
+              <div style="display:flex;justify-content:space-between;gap:var(--space-3);padding:6px 0;border-bottom:1px solid color-mix(in srgb, var(--color-text) 8%, transparent)">
+                <div style="min-width:0">
+                  <div style="font-size:13px;line-height:1.25">{{ term.what }}</div>
+                  <div style="font-size:12px" class="text-muted">{{ term.module }}</div>
+                </div>
+                <div style="text-align:right;flex:none">
+                  <div style="font-size:12px;font-family:var(--font-heading);font-weight:600">{{ term.date }}</div>
+                  <div style="font-size:11px;color:{{ term.color }}">{{ term.relative }}</div>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noDeadlines }}">
+              <p class="card-body">{{ t.noDatesText }}</p>
+            </sc-if>
+          </div>
+
+          <div class="card blueprint">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div class="card-kicker">{{ t.activeTasks }}</div>
+            <sc-for list="{{ activeTasks }}" as="task" hint-placeholder-count="4">
+              <div style="display:flex;align-items:flex-start;gap:9px;padding:5px 0">
+                <button type="button" sc-camel-on-click="{{ task.toggle }}" class="check" style="background:{{ task.checkBg }}">{{ task.mark }}</button>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;line-height:1.3">{{ task.text }}</div>
+                  <div style="font-size:11px;color:{{ task.color }}">{{ task.dueShort }}</div>
+                </div>
+                <span class="tag tag-outline" style="flex:none">{{ task.priorityLabel }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noActiveTasks }}">
+              <p class="card-body">{{ t.noActiveTasks }}</p>
+            </sc-if>
+            <button type="button" class="btn btn-ghost" sc-camel-on-click="{{ goTodo }}" style="align-self:flex-start;margin-top:var(--space-2)">{{ t.fullList }}</button>
+          </div>
+
+          <div class="card blueprint">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div class="card-kicker">{{ t.currentPublication }}</div>
+            <div class="card-title">{{ pub.title }}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <span class="tag tag-accent">{{ pub.statusLabel }}</span>
+              <span class="tag tag-neutral">{{ pub.typeLabel }}</span>
+            </div>
+            <p class="card-body">{{ pub.summary }}</p>
+            <div class="card-meta">{{ pub.nextDeadline }}</div>
+            <button type="button" class="btn btn-ghost" sc-camel-on-click="{{ goPublications }}" style="align-self:flex-start">{{ t.openWorkspace }}</button>
+          </div>
+
+          <div class="card blueprint">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div class="card-kicker">{{ t.latestNotes }}</div>
+            <sc-for list="{{ latestNotes }}" as="note" hint-placeholder-count="3">
+              <div style="padding:6px 0;border-bottom:1px solid color-mix(in srgb, var(--color-text) 8%, transparent)">
+                <div style="font-family:var(--font-heading);font-weight:600;font-size:14px">{{ note.title }}</div>
+                <div style="font-size:12px;line-height:1.35;opacity:.8">{{ note.excerpt }}</div>
+                <div style="font-size:12px;margin-top:2px" class="text-muted">{{ note.date }}</div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noNotes }}">
+              <p class="card-body">{{ t.notebookEmpty }}</p>
+            </sc-if>
+            <button type="button" class="btn btn-ghost" sc-camel-on-click="{{ goNotes }}" style="align-self:flex-start;margin-top:var(--space-2)">{{ t.notebookLink }}</button>
+          </div>
+
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ v.plan }}">
+      <section>
+        <div class="eyebrow">{{ t.module }}</div>
+        <h1 style="margin:0 0 var(--space-2)">{{ t.planTitle }}</h1>
+        <p class="text-muted" style="max-width:64ch">{{ t.planIntro }}</p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:var(--space-6);margin-top:var(--space-6)">
+          <sc-for list="{{ plan }}" as="year" hint-placeholder-count="4">
+            <div class="card blueprint">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-3)">
+                <div style="flex:1;min-width:0">
+                  <div class="card-kicker">{{ year.label }}</div>
+                  <input class="input" sc-camel-read-only="{{ locked }}" value="{{ year.phase }}" sc-camel-on-change="{{ year.setPhase }}" placeholder="{{ t.phasePlaceholder }}" style="font-family:var(--font-heading);font-weight:600;font-size:15px;background:transparent;border-color:transparent;padding-left:0;min-height:26px">
+                </div>
+                <div style="font-family:var(--font-heading);font-weight:600;font-size:20px;color:var(--color-accent-700);flex:none">{{ year.progress }}</div>
+              </div>
+              <div style="height:6px;background:var(--color-neutral-200);border:1px solid var(--color-divider)">
+                <div style="height:100%;background:var(--color-accent);width:{{ year.pct }}"></div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:2px;margin-top:var(--space-2)">
+                <sc-for list="{{ year.milestones }}" as="milestone" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:flex-start;gap:9px;padding:6px 0;border-bottom:1px solid color-mix(in srgb, var(--color-text) 7%, transparent)">
+                    <button type="button" sc-camel-on-click="{{ milestone.toggle }}" class="check" style="background:{{ milestone.checkBg }}">{{ milestone.mark }}</button>
+                    <div style="flex:1;min-width:0">
+                      <input class="input" sc-camel-read-only="{{ locked }}" value="{{ milestone.text }}" sc-camel-on-change="{{ milestone.setText }}" style="width:100%;min-height:26px;font-size:14px;padding:2px 6px;background:transparent;border-color:transparent;text-decoration:{{ milestone.deco }};opacity:{{ milestone.op }}">
+                      <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+                        <input type="date" class="input" disabled="{{ locked }}" value="{{ milestone.due }}" sc-camel-on-change="{{ milestone.setDue }}" style="min-height:26px;font-size:11px;padding:2px 6px;width:132px;background:transparent">
+                        <span style="font-size:11px;color:{{ milestone.color }}">{{ milestone.relative }}</span>
+                      </div>
+                    </div>
+                    <button type="button" disabled="{{ locked }}" sc-camel-on-click="{{ milestone.remove }}" title="{{ t.deleteMilestone }}" style="flex:none;border:0;background:transparent;cursor:pointer;color:var(--color-neutral-600);font-size:15px;line-height:1;padding:2px 4px">×</button>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ year.empty }}">
+                <p class="card-body">{{ t.noMilestones }}</p>
+              </sc-if>
+
+              <div style="display:flex;gap:6px;margin-top:var(--space-2)">
+                <input class="input" placeholder="{{ t.newMilestonePlaceholder }}" ref="{{ year.ref }}" sc-camel-on-key-down="{{ year.keyDown }}">
+                <button type="button" class="btn btn-secondary" sc-camel-on-click="{{ year.add }}" style="flex:none">{{ t.add }}</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <button type="button" class="btn btn-secondary" sc-camel-on-click="{{ addYear }}" style="margin-top:var(--space-6)">{{ t.addYear }}</button>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ v.publications }}">
+      <section>
+        <div class="eyebrow">{{ t.module }}</div>
+        <h1 style="margin:0 0 var(--space-3)">{{ t.publicationsTitle }}</h1>
+        <p class="text-muted" style="margin-bottom:var(--space-4)">{{ t.pubIntro }}</p>
+
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:var(--space-6)">
+          <sc-for list="{{ publicationTabs }}" as="tab" hint-placeholder-count="2">
+            <div class="tab-chip">
+              <button type="button" sc-camel-on-click="{{ tab.markCurrent }}" title="{{ t.setAsCurrent }}" class="tab-star" style="color:{{ tab.starFg }};background:{{ tab.bg }}">{{ tab.star }}</button>
+              <button type="button" sc-camel-on-click="{{ tab.select }}" class="tab-label" style="color:{{ tab.fg }};background:{{ tab.bg }}">{{ tab.label }}</button>
+            </div>
+          </sc-for>
+          <button type="button" class="btn btn-secondary" sc-camel-on-click="{{ addPublication }}">{{ t.newPublication }}</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:var(--space-6);align-items:start">
+
+          <div class="card blueprint">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div class="card-kicker">{{ t.document }}</div>
+            <div class="field"><label>{{ t.lTitle }}</label>
+              <input class="input" sc-camel-read-only="{{ locked }}" value="{{ pub.title }}" sc-camel-on-change="{{ pub.setTitle }}">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2)">
+              <div class="field"><label>{{ t.lType }}</label>
+                <sc-raw-select class="input" disabled="{{ locked }}" value="{{ pub.type }}" sc-camel-on-change="{{ pub.setType }}">
+                  <sc-for list="{{ options.pubTypes }}" as="opt" hint-placeholder-count="6"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+                </sc-raw-select>
+              </div>
+              <div class="field"><label>{{ t.lStatus }}</label>
+                <sc-raw-select class="input" disabled="{{ locked }}" value="{{ pub.status }}" sc-camel-on-change="{{ pub.setStatus }}">
+                  <sc-for list="{{ options.pubStatuses }}" as="opt" hint-placeholder-count="8"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+                </sc-raw-select>
+              </div>
+            </div>
+            <div class="field"><label>{{ t.lWorkingFile }}</label>
+              <input class="input" sc-camel-read-only="{{ locked }}" value="{{ pub.file }}" sc-camel-on-change="{{ pub.setFile }}" placeholder="{{ t.phFile }}">
+            </div>
+            <div class="field"><label>{{ t.lAbstract }}</label>
+              <textarea class="input" sc-camel-read-only="{{ locked }}" value="{{ pub.abstract }}" sc-camel-on-change="{{ pub.setAbstract }}" style="min-height:90px"></textarea>
+            </div>
+            <div class="field"><label>{{ t.lWorkingNotes }}</label>
+              <textarea class="input" sc-camel-read-only="{{ locked }}" value="{{ pub.notes }}" sc-camel-on-change="{{ pub.setNotes }}" style="min-height:120px"></textarea>
+            </div>
+            <button type="button" class="btn btn-ghost" disabled="{{ locked }}" sc-camel-on-click="{{ pub.remove }}" style="align-self:flex-start">{{ t.deletePublication }}</button>
+          </div>
+
+          <div class="card blueprint">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div class="card-kicker">{{ t.venuesHeading }}</div>
+            <sc-raw-table class="table">
+              <sc-raw-thead><sc-raw-tr><sc-raw-th style="width:34%">{{ t.lName }}</sc-raw-th><sc-raw-th style="width:20%">{{ t.lType }}</sc-raw-th><sc-raw-th style="width:140px">{{ t.lDeadline }}</sc-raw-th><sc-raw-th style="width:128px">{{ t.lStatus }}</sc-raw-th><sc-raw-th style="width:26px"></sc-raw-th></sc-raw-tr></sc-raw-thead>
+              <sc-raw-tbody>
+                <sc-for list="{{ pub.venues }}" as="venue" hint-placeholder-count="2">
+                  <sc-raw-tr>
+                    <sc-raw-td>
+                      <input class="input" sc-camel-read-only="{{ locked }}" value="{{ venue.name }}" sc-camel-on-change="{{ venue.setName }}" style="min-height:26px;font-size:13px;padding:2px 6px;background:transparent;border-color:transparent">
+                      <input class="input" sc-camel-read-only="{{ locked }}" value="{{ venue.points }}" sc-camel-on-change="{{ venue.setPoints }}" placeholder="{{ t.phPoints }}" style="min-height:22px;font-size:11px;padding:1px 6px;background:transparent;border-color:transparent">
+                    </sc-raw-td>
+                    <sc-raw-td>
+                      <sc-raw-select class="input" disabled="{{ locked }}" value="{{ venue.type }}" sc-camel-on-change="{{ venue.setType }}" style="min-height:26px;font-size:12px;padding:2px 4px;background:transparent;border-color:transparent">
+                        <sc-for list="{{ options.venueTypes }}" as="opt" hint-placeholder-count="4"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+                      </sc-raw-select>
+                    </sc-raw-td>
+                    <sc-raw-td>
+                      <input type="date" class="input" disabled="{{ locked }}" value="{{ venue.deadline }}" sc-camel-on-change="{{ venue.setDeadline }}" style="min-height:26px;font-size:12px;padding:2px 6px;background:transparent;border-color:transparent;width:134px">
+                      <div style="font-size:11px;color:{{ venue.color }}">{{ venue.relative }}</div>
+                    </sc-raw-td>
+                    <sc-raw-td>
+                      <sc-raw-select class="input" disabled="{{ locked }}" value="{{ venue.status }}" sc-camel-on-change="{{ venue.setStatus }}" style="min-height:26px;font-size:12px;padding:2px 4px">
+                        <sc-for list="{{ options.venueStatuses }}" as="opt" hint-placeholder-count="6"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+                      </sc-raw-select>
+                    </sc-raw-td>
+                    <sc-raw-td style="text-align:right"><button type="button" disabled="{{ locked }}" sc-camel-on-click="{{ venue.remove }}" style="border:0;background:transparent;cursor:pointer;color:var(--color-neutral-600);font-size:15px;padding:0 2px">×</button></sc-raw-td>
+                  </sc-raw-tr>
+                </sc-for>
+              </sc-raw-tbody>
+            </sc-raw-table>
+            <sc-if value="{{ pub.noVenues }}">
+              <p class="card-body">{{ t.noVenuesText }}</p>
+            </sc-if>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--space-2);align-items:end;margin-top:var(--space-2)">
+              <div class="field" style="grid-column:1/-1"><label>{{ t.lName }}</label><input class="input" ref="{{ r.venueName }}" placeholder="{{ t.phVenue }}"></div>
+              <div class="field"><label>{{ t.lType }}</label>
+                <sc-raw-select class="input" ref="{{ r.venueType }}"><sc-for list="{{ options.venueTypes }}" as="opt" hint-placeholder-count="4"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+              </div>
+              <div class="field"><label>{{ t.lDeadline }}</label><input type="date" class="input" ref="{{ r.venueDeadline }}"></div>
+              <div class="field"><label>{{ t.lPoints }}</label><input class="input" ref="{{ r.venuePoints }}" placeholder="{{ t.phPoints2 }}"></div>
+              <div class="field"><label>{{ t.lStatus }}</label>
+                <sc-raw-select class="input" ref="{{ r.venueStatus }}"><sc-for list="{{ options.venueStatuses }}" as="opt" hint-placeholder-count="6"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+              </div>
+              <button type="button" class="btn btn-primary" sc-camel-on-click="{{ addVenue }}">{{ t.addVenue }}</button>
+            </div>
+          </div>
+
+          <div class="card blueprint" style="grid-column:1/-1">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div class="card-kicker">{{ pub.bibHeading }}</div>
+            <sc-raw-table class="table">
+              <sc-raw-thead><sc-raw-tr><sc-raw-th style="width:18%">{{ t.lAuthor }}</sc-raw-th><sc-raw-th style="width:6%">{{ t.lYear }}</sc-raw-th><sc-raw-th style="width:26%">{{ t.lTitle }}</sc-raw-th><sc-raw-th style="width:15%">{{ t.lSource }}</sc-raw-th><sc-raw-th>{{ t.lShortNote }}</sc-raw-th><sc-raw-th style="width:15%">PDF</sc-raw-th><sc-raw-th></sc-raw-th></sc-raw-tr></sc-raw-thead>
+              <sc-raw-tbody>
+                <sc-for list="{{ pub.bibliography }}" as="entry" hint-placeholder-count="3">
+                  <sc-raw-tr>
+                    <sc-raw-td><input class="input" sc-camel-read-only="{{ locked }}" value="{{ entry.author }}" sc-camel-on-change="{{ entry.setAuthor }}" style="min-height:26px;font-size:13px;padding:2px 6px;background:transparent;border-color:transparent"></sc-raw-td>
+                    <sc-raw-td><input class="input" sc-camel-read-only="{{ locked }}" value="{{ entry.year }}" sc-camel-on-change="{{ entry.setYear }}" style="min-height:26px;font-size:13px;padding:2px 4px;background:transparent;border-color:transparent"></sc-raw-td>
+                    <sc-raw-td><input class="input" sc-camel-read-only="{{ locked }}" value="{{ entry.title }}" sc-camel-on-change="{{ entry.setTitle }}" style="min-height:26px;font-size:13px;padding:2px 6px;background:transparent;border-color:transparent"></sc-raw-td>
+                    <sc-raw-td><input class="input" sc-camel-read-only="{{ locked }}" value="{{ entry.source }}" sc-camel-on-change="{{ entry.setSource }}" placeholder="—" style="min-height:26px;font-size:13px;padding:2px 6px;background:transparent;border-color:transparent"></sc-raw-td>
+                    <sc-raw-td style="font-size:12px">
+                      <input class="input" sc-camel-read-only="{{ locked }}" value="{{ entry.note }}" sc-camel-on-change="{{ entry.setNote }}" placeholder="—" style="min-height:26px;font-size:12px;padding:2px 6px;background:transparent;border-color:transparent">
+                    </sc-raw-td>
+                    <sc-raw-td>
+                      <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+                        <sc-for list="{{ entry.pdfs }}" as="pdf" hint-placeholder-count="1">
+                          <button type="button" sc-camel-on-click="{{ pdf.open }}" title="{{ t.openPdf }}" style="border:1px solid var(--color-accent-200);border-radius:4px;background:var(--color-accent-100);color:var(--color-accent-700);font-size:11px;padding:2px 7px;cursor:pointer;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ pdf.name }}</button>
+                        </sc-for>
+                        <button type="button" sc-camel-on-click="{{ entry.pickPdf }}" title="{{ t.attachPdf }}" style="border:1px dashed var(--color-border-strong);border-radius:4px;background:transparent;font-size:11px;padding:2px 7px;cursor:pointer;color:var(--color-neutral-700)">+ PDF</button>
+                        <input type="file" accept="application/pdf" multiple="" ref="{{ entry.ref }}" sc-camel-on-change="{{ entry.loadPdf }}" style="display:none">
+                      </div>
+                    </sc-raw-td>
+                    <sc-raw-td style="text-align:right"><button type="button" disabled="{{ locked }}" sc-camel-on-click="{{ entry.remove }}" style="border:0;background:transparent;cursor:pointer;color:var(--color-neutral-600);font-size:15px;padding:0 2px">×</button></sc-raw-td>
+                  </sc-raw-tr>
+                </sc-for>
+              </sc-raw-tbody>
+            </sc-raw-table>
+            <sc-if value="{{ pub.noBibliography }}">
+              <p class="card-body">{{ t.bibEmpty }}</p>
+            </sc-if>
+            <div style="display:grid;grid-template-columns:1fr 0.4fr 1.6fr 1fr 1.2fr auto;gap:var(--space-2);align-items:end;margin-top:var(--space-2)">
+              <div class="field"><label>{{ t.lAuthor }}</label><input class="input" ref="{{ r.bibAuthor }}" placeholder="{{ t.phAuthor }}"></div>
+              <div class="field"><label>{{ t.lYear }}</label><input class="input" ref="{{ r.bibYear }}" placeholder="2025"></div>
+              <div class="field"><label>{{ t.lTitle }}</label><input class="input" ref="{{ r.bibTitle }}" sc-camel-on-key-down="{{ bibKeyDown }}"></div>
+              <div class="field"><label>{{ t.lSource }}</label><input class="input" ref="{{ r.bibSource }}" placeholder="{{ t.phSource }}"></div>
+              <div class="field"><label>{{ t.lShortNote }}</label><input class="input" ref="{{ r.bibNote }}" placeholder="{{ t.phShortNote }}"></div>
+              <button type="button" class="btn btn-primary" sc-camel-on-click="{{ addBibEntry }}">{{ t.add }}</button>
+            </div>
+          </div>
+
+          <div class="card blueprint" style="grid-column:1/-1">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--space-4)">
+              <div style="min-width:0">
+                <div class="card-kicker">{{ libraryHeading }}</div>
+                <p class="card-body" style="max-width:70ch;margin:0">{{ libraryInfo }}</p>
+              </div>
+              <div style="display:flex;gap:6px;flex:none">
+                <button type="button" class="btn btn-primary" sc-camel-on-click="{{ pickPdfFiles }}">{{ t.addPdfFiles }}</button>
+              </div>
+            </div>
+            <input type="file" accept="application/pdf" multiple="" ref="{{ r.pdfFiles }}" sc-camel-on-change="{{ loadPdfFiles }}" style="display:none">
+
+            <div sc-camel-on-drop="{{ dropFiles }}" sc-camel-on-drag-over="{{ dragOver }}" style="border:1px dashed var(--color-neutral-400);padding:var(--space-6);text-align:center;font-size:13px;color:var(--color-neutral-700);margin-top:var(--space-2)">
+              {{ t.dropText }}
+            </div>
+            <div style="font-size:11px;min-height:16px" class="text-muted">{{ pdfInfo }}</div>
+
+            <sc-raw-table class="table">
+              <sc-raw-thead><sc-raw-tr><sc-raw-th>{{ t.lFile }}</sc-raw-th><sc-raw-th style="width:80px">{{ t.lSize }}</sc-raw-th><sc-raw-th style="width:28%">{{ t.lLinkedEntry }}</sc-raw-th><sc-raw-th style="width:110px">{{ t.lAdded }}</sc-raw-th><sc-raw-th></sc-raw-th></sc-raw-tr></sc-raw-thead>
+              <sc-raw-tbody>
+                <sc-for list="{{ library }}" as="file" hint-placeholder-count="3">
+                  <sc-raw-tr>
+                    <sc-raw-td><button type="button" sc-camel-on-click="{{ file.open }}" style="border:0;background:transparent;padding:0;cursor:pointer;font-family:var(--font-heading);font-weight:600;font-size:14px;color:var(--color-accent-700);text-align:left">{{ file.name }}</button></sc-raw-td>
+                    <sc-raw-td class="text-muted">{{ file.size }}</sc-raw-td>
+                    <sc-raw-td>
+                      <sc-raw-select class="input" disabled="{{ locked }}" value="{{ file.bibId }}" sc-camel-on-change="{{ file.setBib }}" style="min-height:28px;font-size:12px;padding:2px 4px">
+                        <sc-for list="{{ bibOptions }}" as="opt" hint-placeholder-count="1">
+                          <option value="{{ opt.value }}">{{ opt.label }}</option>
+                        </sc-for>
+                      </sc-raw-select>
+                    </sc-raw-td>
+                    <sc-raw-td class="text-muted">{{ file.date }}</sc-raw-td>
+                    <sc-raw-td style="text-align:right"><button type="button" disabled="{{ locked }}" sc-camel-on-click="{{ file.remove }}" style="border:0;background:transparent;cursor:pointer;color:var(--color-neutral-600);font-size:15px;padding:0 2px">×</button></sc-raw-td>
+                  </sc-raw-tr>
+                </sc-for>
+              </sc-raw-tbody>
+            </sc-raw-table>
+            <sc-if value="{{ noPdfs }}">
+              <p class="card-body">{{ t.libraryEmpty }}</p>
+            </sc-if>
+          </div>
+
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ v.trips }}">
+      <section>
+        <div class="eyebrow">{{ t.module }}</div>
+        <h1 style="margin:0 0 var(--space-2)">{{ t.tripsTitle }}</h1>
+        <p class="text-muted">{{ t.plannedCosts }} <strong>{{ totalCosts }}</strong></p>
+
+        <div class="card blueprint" style="margin-top:var(--space-4)">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div style="overflow-x:auto">
+          <sc-raw-table class="table" style="min-width:1090px">
+            <sc-raw-thead><sc-raw-tr><sc-raw-th style="width:20%">{{ t.lName }}</sc-raw-th><sc-raw-th style="width:132px">{{ t.lType }}</sc-raw-th><sc-raw-th style="width:146px">{{ t.lAppDeadline }}</sc-raw-th><sc-raw-th style="width:146px">{{ t.lDateRange }}</sc-raw-th><sc-raw-th>{{ t.lPlace }}</sc-raw-th><sc-raw-th style="width:140px;text-align:right">{{ t.lCost }}</sc-raw-th><sc-raw-th>{{ t.lFunding }}</sc-raw-th><sc-raw-th style="width:124px">{{ t.lStatus }}</sc-raw-th><sc-raw-th style="width:28px"></sc-raw-th></sc-raw-tr></sc-raw-thead>
+            <sc-raw-tbody>
+              <sc-for list="{{ trips }}" as="trip" hint-placeholder-count="3">
+                <sc-raw-tr>
+                  <sc-raw-td>
+                    <input class="input" sc-camel-read-only="{{ locked }}" value="{{ trip.name }}" sc-camel-on-change="{{ trip.setName }}" style="min-height:26px;font-family:var(--font-heading);font-weight:600;font-size:14px;padding:2px 6px;background:transparent;border-color:transparent">
+                    <div style="display:flex;gap:2px;align-items:center">
+                      <input class="input" sc-camel-read-only="{{ locked }}" value="{{ trip.link }}" sc-camel-on-change="{{ trip.setLink }}" placeholder="{{ t.phLink }}" style="min-height:22px;font-size:11px;padding:1px 6px;background:transparent;border-color:transparent;color:var(--color-neutral-600)">
+                      <button type="button" disabled="{{ trip.noLink }}" sc-camel-on-click="{{ trip.openLink }}" title="{{ t.openLink }}" style="border:0;background:transparent;cursor:pointer;color:var(--color-accent-700);font-size:13px;padding:0 2px;opacity:{{ trip.linkOpacity }}">↗</button>
+                    </div>
+                  </sc-raw-td>
+                  <sc-raw-td>
+                    <sc-raw-select class="input" disabled="{{ locked }}" value="{{ trip.type }}" sc-camel-on-change="{{ trip.setType }}" style="min-height:26px;font-size:12px;padding:2px 4px;background:transparent;border-color:transparent">
+                      <sc-for list="{{ options.tripTypes }}" as="opt" hint-placeholder-count="6"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+                    </sc-raw-select>
+                  </sc-raw-td>
+                  <sc-raw-td>
+                    <input type="date" class="input" disabled="{{ locked }}" value="{{ trip.deadline }}" sc-camel-on-change="{{ trip.setDeadline }}" style="min-height:26px;font-size:12px;padding:2px 6px;background:transparent;border-color:transparent;width:134px">
+                    <div style="font-size:11px;color:{{ trip.deadlineColor }}">{{ trip.deadlineRelative }}</div>
+                  </sc-raw-td>
+                  <sc-raw-td>
+                    <input type="date" class="input" disabled="{{ locked }}" value="{{ trip.date }}" sc-camel-on-change="{{ trip.setDate }}" title="{{ t.lFrom }}" style="min-height:26px;font-size:12px;padding:2px 6px;background:transparent;border-color:transparent;width:134px">
+                    <input type="date" class="input" disabled="{{ locked }}" value="{{ trip.endDate }}" sc-camel-on-change="{{ trip.setEndDate }}" title="{{ t.lTo }}" style="min-height:26px;font-size:12px;padding:2px 6px;background:transparent;border-color:{{ trip.endBorder }};width:134px">
+                    <div style="font-size:11px;color:{{ trip.color }}">{{ trip.relative }}</div>
+                  </sc-raw-td>
+                  <sc-raw-td><input class="input" sc-camel-read-only="{{ locked }}" value="{{ trip.place }}" sc-camel-on-change="{{ trip.setPlace }}" placeholder="—" style="min-height:26px;font-size:13px;padding:2px 6px;background:transparent;border-color:transparent"></sc-raw-td>
+                  <sc-raw-td>
+                    <div style="display:flex;gap:2px;justify-content:flex-end">
+                      <input class="input" sc-camel-read-only="{{ locked }}" value="{{ trip.cost }}" sc-camel-on-change="{{ trip.setCost }}" placeholder="0" style="min-height:26px;font-size:13px;padding:2px 6px;background:transparent;border-color:transparent;text-align:right;width:72px">
+                      <sc-raw-select class="input" disabled="{{ locked }}" value="{{ trip.currency }}" sc-camel-on-change="{{ trip.setCurrency }}" style="min-height:26px;font-size:12px;padding:2px 2px;background:transparent;border-color:transparent;width:58px"><sc-for list="{{ options.currencies }}" as="opt" hint-placeholder-count="2"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+                    </div>
+                  </sc-raw-td>
+                  <sc-raw-td><input class="input" sc-camel-read-only="{{ locked }}" value="{{ trip.funding }}" sc-camel-on-change="{{ trip.setFunding }}" placeholder="—" style="min-height:26px;font-size:13px;padding:2px 6px;background:transparent;border-color:transparent"></sc-raw-td>
+                  <sc-raw-td>
+                    <sc-raw-select class="input" disabled="{{ locked }}" value="{{ trip.status }}" sc-camel-on-change="{{ trip.setStatus }}" style="min-height:26px;font-size:12px;padding:2px 4px">
+                      <sc-for list="{{ options.tripStatuses }}" as="opt" hint-placeholder-count="5"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+                    </sc-raw-select>
+                  </sc-raw-td>
+                  <sc-raw-td style="text-align:right"><button type="button" disabled="{{ locked }}" sc-camel-on-click="{{ trip.remove }}" style="border:0;background:transparent;cursor:pointer;color:var(--color-neutral-600);font-size:15px;padding:0 2px">×</button></sc-raw-td>
+                </sc-raw-tr>
+              </sc-for>
+            </sc-raw-tbody>
+          </sc-raw-table>
+          </div>
+          <sc-if value="{{ noTrips }}">
+            <p class="card-body">{{ t.noEntries }}</p>
+          </sc-if>
+        </div>
+
+        <div class="card blueprint" style="margin-top:var(--space-6)">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div class="card-kicker">{{ t.newTrip }}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-3);align-items:end">
+            <div class="field" style="grid-column:span 2"><label>{{ t.lName }}</label><input class="input" ref="{{ r.tripName }}" placeholder="{{ t.phTrip }}"></div>
+            <div class="field"><label>{{ t.lType }}</label>
+              <sc-raw-select class="input" ref="{{ r.tripType }}"><sc-for list="{{ options.tripTypes }}" as="opt" hint-placeholder-count="6"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+            </div>
+            <div class="field"><label>{{ t.lAppDeadline }}</label><input type="date" class="input" ref="{{ r.tripDeadline }}"></div>
+            <div class="field"><label>{{ t.lFrom }}</label><input type="date" class="input" ref="{{ r.tripDate }}"></div>
+            <div class="field"><label>{{ t.lTo }}</label><input type="date" class="input" ref="{{ r.tripEndDate }}"></div>
+            <div class="field"><label>{{ t.lPlace }}</label><input class="input" ref="{{ r.tripPlace }}"></div>
+            <div class="field" style="grid-column:span 2"><label>{{ t.lLink }}</label><input class="input" ref="{{ r.tripLink }}" placeholder="https://"></div>
+            <div class="field"><label>{{ t.lCost }}</label><input class="input" ref="{{ r.tripCost }}" placeholder="{{ t.phCost }}"></div>
+            <div class="field"><label>{{ t.lCurrency }}</label>
+              <sc-raw-select class="input" ref="{{ r.tripCurrency }}" sc-camel-default-value="{{ defaultCurrency }}"><sc-for list="{{ options.currencies }}" as="opt" hint-placeholder-count="2"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+            </div>
+            <div class="field"><label>{{ t.lFunding }}</label><input class="input" ref="{{ r.tripFunding }}" placeholder="{{ t.phFunding }}"></div>
+            <div class="field"><label>{{ t.lStatus }}</label>
+              <sc-raw-select class="input" ref="{{ r.tripStatus }}"><sc-for list="{{ options.tripStatuses }}" as="opt" hint-placeholder-count="5"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+            </div>
+            <button type="button" class="btn btn-primary" sc-camel-on-click="{{ addTrip }}">{{ t.addTrip }}</button>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ v.funding }}">
+      <section>
+        <div class="eyebrow">{{ t.module }}</div>
+        <h1 style="margin:0 0 var(--space-2)">{{ t.fundingTitle }}</h1>
+        <p class="text-muted">{{ t.awardedLabel }} <strong>{{ totalAwarded }}</strong> · {{ t.pendingLabel }} <strong>{{ totalPending }}</strong></p>
+
+        <div class="card blueprint" style="margin-top:var(--space-4)">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div style="overflow-x:auto">
+          <sc-raw-table class="table" style="min-width:880px">
+            <sc-raw-thead><sc-raw-tr><sc-raw-th style="width:24%">{{ t.lName }}</sc-raw-th><sc-raw-th style="width:150px">{{ t.lType }}</sc-raw-th><sc-raw-th style="width:150px">{{ t.lDeadline }}</sc-raw-th><sc-raw-th style="width:160px;text-align:right">{{ t.lAmount }}</sc-raw-th><sc-raw-th style="width:16%">{{ t.lSource }}</sc-raw-th><sc-raw-th style="width:132px">{{ t.lStatus }}</sc-raw-th><sc-raw-th style="width:28px"></sc-raw-th></sc-raw-tr></sc-raw-thead>
+            <sc-raw-tbody>
+              <sc-for list="{{ funding }}" as="fund" hint-placeholder-count="3">
+                <sc-raw-tr>
+                  <sc-raw-td>
+                    <input class="input" sc-camel-read-only="{{ locked }}" value="{{ fund.name }}" sc-camel-on-change="{{ fund.setName }}" style="min-height:26px;font-family:var(--font-heading);font-weight:600;font-size:14px;padding:2px 6px;background:transparent;border-color:transparent">
+                    <input class="input" sc-camel-read-only="{{ locked }}" value="{{ fund.note }}" sc-camel-on-change="{{ fund.setNote }}" placeholder="{{ t.phNote }}" style="min-height:22px;font-size:11px;padding:1px 6px;background:transparent;border-color:transparent">
+                  </sc-raw-td>
+                  <sc-raw-td>
+                    <sc-raw-select class="input" disabled="{{ locked }}" value="{{ fund.type }}" sc-camel-on-change="{{ fund.setType }}" style="min-height:26px;font-size:12px;padding:2px 4px;background:transparent;border-color:transparent">
+                      <sc-for list="{{ options.fundingTypes }}" as="opt" hint-placeholder-count="6"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+                    </sc-raw-select>
+                  </sc-raw-td>
+                  <sc-raw-td>
+                    <input type="date" class="input" disabled="{{ locked }}" value="{{ fund.deadline }}" sc-camel-on-change="{{ fund.setDeadline }}" style="min-height:26px;font-size:12px;padding:2px 6px;background:transparent;border-color:transparent;width:134px">
+                    <div style="font-size:11px;color:{{ fund.color }}">{{ fund.relative }}</div>
+                  </sc-raw-td>
+                  <sc-raw-td>
+                    <div style="display:flex;gap:2px;justify-content:flex-end">
+                      <input class="input" sc-camel-read-only="{{ locked }}" value="{{ fund.amount }}" sc-camel-on-change="{{ fund.setAmount }}" placeholder="0" style="min-height:26px;font-size:13px;padding:2px 6px;background:transparent;border-color:transparent;text-align:right;width:80px">
+                      <sc-raw-select class="input" disabled="{{ locked }}" value="{{ fund.currency }}" sc-camel-on-change="{{ fund.setCurrency }}" style="min-height:26px;font-size:12px;padding:2px 2px;background:transparent;border-color:transparent;width:58px"><sc-for list="{{ options.currencies }}" as="opt" hint-placeholder-count="2"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+                    </div>
+                  </sc-raw-td>
+                  <sc-raw-td><input class="input" sc-camel-read-only="{{ locked }}" value="{{ fund.source }}" sc-camel-on-change="{{ fund.setSource }}" placeholder="—" style="min-height:26px;font-size:13px;padding:2px 6px;background:transparent;border-color:transparent"></sc-raw-td>
+                  <sc-raw-td>
+                    <sc-raw-select class="input" disabled="{{ locked }}" value="{{ fund.status }}" sc-camel-on-change="{{ fund.setStatus }}" style="min-height:28px;font-size:12px;padding:2px 4px">
+                      <sc-for list="{{ options.fundingStatuses }}" as="opt" hint-placeholder-count="5"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+                    </sc-raw-select>
+                  </sc-raw-td>
+                  <sc-raw-td style="text-align:right"><button type="button" disabled="{{ locked }}" sc-camel-on-click="{{ fund.remove }}" style="border:0;background:transparent;cursor:pointer;color:var(--color-neutral-600);font-size:15px;padding:0 2px">×</button></sc-raw-td>
+                </sc-raw-tr>
+              </sc-for>
+            </sc-raw-tbody>
+          </sc-raw-table>
+          </div>
+          <sc-if value="{{ noFunding }}">
+            <p class="card-body">{{ t.noEntries }}</p>
+          </sc-if>
+        </div>
+
+        <div class="card blueprint" style="margin-top:var(--space-6)">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div class="card-kicker">{{ t.newFundingSource }}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-3);align-items:end">
+            <div class="field" style="grid-column:span 2"><label>{{ t.lName }}</label><input class="input" ref="{{ r.fundName }}" placeholder="{{ t.phGrant }}"></div>
+            <div class="field"><label>{{ t.lType }}</label>
+              <sc-raw-select class="input" ref="{{ r.fundType }}"><sc-for list="{{ options.fundingTypes }}" as="opt" hint-placeholder-count="6"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+            </div>
+            <div class="field"><label>{{ t.lDeadline }}</label><input type="date" class="input" ref="{{ r.fundDeadline }}"></div>
+            <div class="field"><label>{{ t.lAmount }}</label><input class="input" ref="{{ r.fundAmount }}" placeholder="{{ t.phAmount }}"></div>
+            <div class="field"><label>{{ t.lCurrency }}</label>
+              <sc-raw-select class="input" ref="{{ r.fundCurrency }}" sc-camel-default-value="{{ defaultCurrency }}"><sc-for list="{{ options.currencies }}" as="opt" hint-placeholder-count="2"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+            </div>
+            <div class="field"><label>{{ t.lSource }}</label><input class="input" ref="{{ r.fundSource }}" placeholder="{{ t.phFundingSource }}"></div>
+            <div class="field"><label>{{ t.lStatus }}</label>
+              <sc-raw-select class="input" ref="{{ r.fundStatus }}"><sc-for list="{{ options.fundingStatuses }}" as="opt" hint-placeholder-count="5"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+            </div>
+            <div class="field" style="grid-column:span 2"><label>{{ t.lNote }}</label><input class="input" ref="{{ r.fundNote }}" placeholder="{{ t.phRequirements }}"></div>
+            <button type="button" class="btn btn-primary" sc-camel-on-click="{{ addFunding }}">{{ t.add }}</button>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ v.todo }}">
+      <section>
+        <div class="eyebrow">{{ t.module }}</div>
+        <h1 style="margin:0 0 var(--space-4)">{{ t.todoTitle }}</h1>
+
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:end;margin-bottom:var(--space-6)">
+          <div class="field" style="flex:1;min-width:220px"><label>{{ t.lTask }}</label><input class="input" ref="{{ r.taskText }}" sc-camel-on-key-down="{{ taskKeyDown }}" placeholder="{{ t.phTask }}"></div>
+          <div class="field"><label>{{ t.lPriority }}</label>
+            <sc-raw-select class="input" ref="{{ r.taskPriority }}"><sc-for list="{{ options.priorities }}" as="opt" hint-placeholder-count="3"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+          </div>
+          <div class="field"><label>{{ t.lDue }}</label><input type="date" class="input" ref="{{ r.taskDue }}"></div>
+          <div class="field"><label>{{ t.lArea }}</label>
+            <sc-raw-select class="input" ref="{{ r.taskArea }}"><sc-for list="{{ options.areas }}" as="opt" hint-placeholder-count="5"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+          </div>
+          <button type="button" class="btn btn-primary" sc-camel-on-click="{{ addTask }}">{{ t.addTask }}</button>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-bottom:var(--space-4)">
+          <sc-for list="{{ filters }}" as="filter" hint-placeholder-count="3">
+            <button type="button" sc-camel-on-click="{{ filter.go }}" class="chip" style="color:{{ filter.fg }};background:{{ filter.bg }}">{{ filter.label }}</button>
+          </sc-for>
+        </div>
+
+        <div class="card blueprint">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <sc-for list="{{ tasks }}" as="task" hint-placeholder-count="5">
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid color-mix(in srgb, var(--color-text) 7%, transparent)">
+              <button type="button" sc-camel-on-click="{{ task.toggle }}" class="check" style="background:{{ task.checkBg }}">{{ task.mark }}</button>
+              <input class="input" sc-camel-read-only="{{ locked }}" value="{{ task.text }}" sc-camel-on-change="{{ task.setText }}" style="flex:1;min-width:0;min-height:26px;font-size:14px;padding:2px 6px;background:transparent;border-color:transparent;text-decoration:{{ task.deco }};opacity:{{ task.op }}">
+              <div style="flex:none;display:flex;align-items:center;gap:8px">
+                <sc-raw-select class="input" disabled="{{ locked }}" value="{{ task.area }}" sc-camel-on-change="{{ task.setArea }}" style="min-height:26px;font-size:12px;padding:2px 4px;background:transparent;border-color:transparent;width:118px">
+                  <sc-for list="{{ options.areas }}" as="opt" hint-placeholder-count="5"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+                </sc-raw-select>
+                <sc-raw-select class="input" disabled="{{ locked }}" value="{{ task.priority }}" sc-camel-on-change="{{ task.setPriority }}" style="min-height:26px;font-size:12px;padding:2px 4px;background:transparent;border-color:transparent;width:86px">
+                  <sc-for list="{{ options.priorities }}" as="opt" hint-placeholder-count="3"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+                </sc-raw-select>
+                <input type="date" class="input" disabled="{{ locked }}" value="{{ task.due }}" sc-camel-on-change="{{ task.setDue }}" style="min-height:26px;font-size:12px;padding:2px 6px;background:transparent;border-color:transparent;width:134px">
+                <span style="font-size:11px;width:88px;text-align:right;color:{{ task.color }}">{{ task.relative }}</span>
+                <button type="button" disabled="{{ locked }}" sc-camel-on-click="{{ task.remove }}" style="border:0;background:transparent;cursor:pointer;color:var(--color-neutral-600);font-size:15px;padding:0 2px">×</button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noFilteredTasks }}">
+            <p class="card-body">{{ t.nothingHere }}</p>
+          </sc-if>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ v.notes }}">
+      <section>
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-6)">
+          <div>
+            <div class="eyebrow">{{ t.module }}</div>
+            <h1 style="margin:0">{{ t.notesTitle }}</h1>
+          </div>
+          <button type="button" class="btn btn-primary" sc-camel-on-click="{{ addNote }}">{{ t.newNote }}</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--space-6);align-items:start">
+          <sc-for list="{{ notes }}" as="note" hint-placeholder-count="3">
+            <div class="card blueprint">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <input class="input" sc-camel-read-only="{{ locked }}" value="{{ note.title }}" sc-camel-on-change="{{ note.setTitle }}" placeholder="{{ t.phNoteTitle }}" style="font-family:var(--font-heading);font-weight:600;font-size:16px;background:transparent;border-color:transparent;padding-left:0">
+              <textarea class="input" sc-camel-read-only="{{ locked }}" value="{{ note.text }}" sc-camel-on-change="{{ note.setText }}" placeholder="{{ t.phText }}" style="min-height:170px"></textarea>
+              <div class="card-meta" style="justify-content:space-between">
+                <span>{{ note.date }}</span>
+                <button type="button" disabled="{{ locked }}" sc-camel-on-click="{{ note.remove }}" style="border:0;background:transparent;cursor:pointer;color:var(--color-neutral-600);font-size:12px">{{ t.delete }}</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ noNotes }}">
+          <p class="text-muted">{{ t.noNotesText }}</p>
+        </sc-if>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ v.settings }}">
+      <section>
+        <div class="eyebrow">{{ t.module }}</div>
+        <h1 style="margin:0 0 var(--space-2)">{{ t.settingsTitle }}</h1>
+        <p class="text-muted" style="max-width:64ch">{{ t.settingsIntro }}</p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--space-6);margin-top:var(--space-6);align-items:start">
+          <div class="card blueprint">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div class="card-kicker">{{ t.project }}</div>
+            <div class="field"><label>{{ t.lProjectName }}</label>
+              <input class="input" value="{{ settings.projectName }}" sc-camel-on-change="{{ settings.setProjectName }}" placeholder="{{ t.phProjectName }}">
+            </div>
+            <div class="field"><label>{{ t.lStartYear }}</label>
+              <input class="input" value="{{ settings.startYear }}" sc-camel-on-change="{{ settings.setStartYear }}" placeholder="2026">
+            </div>
+            <div class="field"><label>{{ t.lDefaultCurrency }}</label>
+              <sc-raw-select class="input" value="{{ settings.currency }}" sc-camel-on-change="{{ settings.setCurrency }}">
+                <sc-for list="{{ options.currencies }}" as="opt" hint-placeholder-count="2"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+              </sc-raw-select>
+            </div>
+          </div>
+
+          <div class="card blueprint">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <div class="card-kicker">{{ t.language }}</div>
+            <p class="card-body">{{ t.languageText }}</p>
+            <div style="display:flex;gap:6px">
+              <sc-for list="{{ settings.languages }}" as="lang" hint-placeholder-count="2">
+                <button type="button" sc-camel-on-click="{{ lang.go }}" class="chip" style="color:{{ lang.fg }};background:{{ lang.bg }}">{{ lang.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;projectName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Technologie postkwantowe w komunikacji satelitarnej&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;defaultCurrency&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;PLN&quot;,&quot;EUR&quot;],&quot;default&quot;:&quot;PLN&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Data&quot;},&quot;startYear&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:2026,&quot;min&quot;:2015,&quot;max&quot;:2040,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Plan&quot;}}" src="js/app.js"></script>
+</body></html>
