@@ -83,6 +83,14 @@ select.input:disabled { appearance: none; }
 .cal-pop-what { min-width: 0; overflow-wrap: anywhere; }
 .cal-pop-item .tag { flex: none; }
 
+.cal-day { user-select: none; }
+
+/* — quick-add dialog — */
+.qa-backdrop { z-index: 100; animation: qa-fade .16s ease; }
+.qa-dialog { width: min(500px, 100%); max-height: calc(100vh - 32px); overflow: auto; gap: var(--space-4); animation: qa-rise .2s ease; }
+@keyframes qa-fade { from { opacity: 0; } }
+@keyframes qa-rise { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+
 /* — checkboxes (tasks, milestones) — */
 .check {
   flex: none; width: 18px; height: 18px; margin-top: 2px; display: grid; place-items: center;

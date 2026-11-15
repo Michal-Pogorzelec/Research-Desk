@@ -1,7 +1,7 @@
 class Component extends DCLogic {
   COLLECTIONS = ['plan', 'publications', 'trips', 'funding', 'todos', 'notes', 'library', 'settings'];
 
-  state = { view: 'dashboard', pubId: null, taskFilter: 'active', data: null, lastEdit: '', server: null, serverError: '', pdfInfo: '', monthOffset: 0, selectedDay: null, editing: false };
+  state = { view: 'dashboard', pubId: null, taskFilter: 'active', data: null, lastEdit: '', server: null, serverError: '', pdfInfo: '', monthOffset: 0, selectedDay: null, editing: false, quickAdd: null };
 
   lang() { return ((this.state.data || {}).settings || {}).language || 'pl'; }
   locale() { return this.lang() === 'en' ? 'en-GB' : 'pl-PL'; }
@@ -53,6 +53,18 @@ class Component extends DCLogic {
       calendar: P('Kalendarz', 'Calendar'),
       today: P('Dziś', 'Today'),
       noEvents: P('Brak wydarzeń w tym dniu.', 'No events on this day.'),
+      addEvent: P('+ Dodaj wydarzenie', '+ Add event'),
+      addEventHint: P('Kliknij dwukrotnie dzień, aby dodać wydarzenie.', 'Double-click a day to add an event.'),
+      newEvent: P('Nowe wydarzenie', 'New event'),
+      eventKind: P('Rodzaj', 'Kind'),
+      kindMilestone: P('Etap planu', 'Plan milestone'),
+      kindFunding: P('Termin finansowania', 'Funding deadline'),
+      kindVenue: P('Termin publikacji', 'Submission deadline'),
+      lMilestone: P('Etap', 'Milestone'),
+      lVenue: P('Czasopismo / konferencja', 'Journal / conference'),
+      lPlanYear: P('Rok planu', 'Plan year'),
+      cancel: P('Anuluj', 'Cancel'),
+      nameRequired: P('Wpisz nazwę i datę wydarzenia.', 'Enter a name and a date for the event.'),
       upcomingDeadlines: P('Najbliższe terminy', 'Upcoming deadlines'),
       noDatesText: P('Brak wpisanych dat. Terminy z planu, publikacji, wyjazdów, finansowania i listy TODO pojawiają się tutaj automatycznie.', 'No dates yet. Deadlines from the plan, publications, travel, funding and the TODO list appear here automatically.'),
       activeTasks: P('Aktywne TODO', 'Active TODO'),
@@ -217,7 +229,8 @@ class Component extends DCLogic {
         relative: this.relative(iso),
         events: events.map(t => ({ what: t.what, module: t.module })),
         popAlign: i % 7 <= 1 ? 'left' : i % 7 >= 5 ? 'right' : 'center',
-        select: () => this.setState({ selectedDay: iso })
+        select: () => this.setState({ selectedDay: iso }),
+        open: () => this.openQuickAdd(iso)
       });
     }
     const events = (byDay[selected] || []).map(t => ({ what: t.what, module: t.module }));
@@ -231,7 +244,99 @@ class Component extends DCLogic {
       noEvents: events.length === 0,
       prev: () => this.setState({ monthOffset: offset - 1 }),
       next: () => this.setState({ monthOffset: offset + 1 }),
-      today: () => this.setState({ monthOffset: 0, selectedDay: todayIso })
+      today: () => this.setState({ monthOffset: 0, selectedDay: todayIso }),
+      addEvent: () => this.openQuickAdd(selected)
+    };
+  }
+
+  /* ——— quick add from the calendar: one dialog that creates a record in the chosen module ——— */
+
+  planYearIndex(iso) {
+    const d = new Date(iso + 'T00:00:00');
+    const months = (d.getFullYear() - this.startYear()) * 12 + (d.getMonth() - 9);
+    return Math.floor(months / 12);
+  }
+
+  openQuickAdd(iso) {
+    const d = this.state.data;
+    const year = d.plan[Math.min(Math.max(this.planYearIndex(iso), 0), d.plan.length - 1)];
+    const pub = d.publications.find(p => p.current) || d.publications[0];
+    this.setState({
+      selectedDay: iso,
+      quickAdd: { iso, kind: this._lastQuickKind || 'todo', yearId: year ? year.id : null, pubId: pub ? pub.id : null, error: false }
+    });
+    setTimeout(() => { const el = (this._refEls || {}).qaName; if (el) el.focus(); }, 0);
+  }
+
+  setQuickAdd(changes) {
+    this.setState(s => ({ quickAdd: s.quickAdd && { ...s.quickAdd, ...changes } }));
+  }
+
+  saveQuickAdd() {
+    const qa = this.state.quickAdd;
+    if (!qa) return;
+    const name = this.val('qaName');
+    if (!name || !qa.iso) {
+      this.setQuickAdd({ error: true });
+      const el = (this._refEls || {}).qaName; if (el) el.focus();
+      return;
+    }
+    const iso = qa.iso;
+    const currency = this.defaultCurrency();
+    let add;
+    if (qa.kind === 'todo') {
+      const rec = { id: this.uid(), text: name, done: false, priority: this.val('qaPriority') || 'medium', due: iso, area: this.val('qaArea') || 'general' };
+      add = x => { x.todos.push(rec); };
+    } else if (qa.kind === 'trip') {
+      const rec = { id: this.uid(), name, type: this.val('qaTripType') || 'conference', deadline: '', date: iso, endDate: this.val('qaEndDate'), place: this.val('qaPlace'), link: '', cost: '', currency, funding: '', status: 'considered' };
+      add = x => { x.trips.push(rec); };
+    } else if (qa.kind === 'milestone') {
+      const rec = { id: this.uid(), text: name, done: false, due: iso };
+      add = x => { (x.plan.find(p => p.id === qa.yearId) || x.plan[0]).milestones.push(rec); };
+    } else if (qa.kind === 'funding') {
+      const rec = { id: this.uid(), name, type: this.val('qaFundType') || 'grant', deadline: iso, amount: '', currency, source: '', status: 'considered', note: '' };
+      add = x => { x.funding.push(rec); };
+    } else {
+      const rec = { id: this.uid(), name, type: this.val('qaVenueType') || 'journal', deadline: iso, points: '', status: 'considered' };
+      add = x => { (x.publications.find(p => p.id === qa.pubId) || x.publications[0]).venues.push(rec); };
+    }
+    this._lastQuickKind = qa.kind;
+    this.update(add);
+    this.setState({ quickAdd: null, selectedDay: iso });
+  }
+
+  quickAddVm(d, T) {
+    const qa = this.state.quickAdd;
+    if (!qa || !d) return { open: false };
+    const kinds = [['todo', T.modTodo], ['trip', T.modTrip], ['milestone', T.kindMilestone], ['funding', T.kindFunding], ['venue', T.kindVenue]]
+      .filter(([kind]) => (kind !== 'milestone' || d.plan.length > 0) && (kind !== 'venue' || d.publications.length > 0));
+    const kind = qa.kind;
+    const close = () => this.setState({ quickAdd: null });
+    return {
+      open: true, iso: qa.iso, error: qa.error,
+      label: qa.iso ? new Date(qa.iso + 'T00:00:00').toLocaleDateString(this.locale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '',
+      kinds: kinds.map(([code, label]) => ({
+        label, go: () => this.setQuickAdd({ kind: code, error: false }),
+        fg: kind === code ? 'var(--color-accent-700)' : 'var(--color-text)',
+        bg: kind === code ? 'var(--color-accent-100)' : 'var(--color-bg)'
+      })),
+      isTodo: kind === 'todo', isTrip: kind === 'trip', isMilestone: kind === 'milestone', isFunding: kind === 'funding', isVenue: kind === 'venue',
+      nameLabel: { todo: T.lTask, trip: T.lName, milestone: T.lMilestone, funding: T.lName, venue: T.lVenue }[kind],
+      namePlaceholder: { todo: T.phTask, trip: T.phTrip, milestone: T.newMilestonePlaceholder, funding: T.phGrant, venue: T.phVenue }[kind],
+      dateLabel: { todo: T.lDue, trip: T.lFrom, milestone: T.lDue, funding: T.lDeadline, venue: T.lDeadline }[kind],
+      yearId: qa.yearId || '', pubId: qa.pubId || '',
+      years: d.plan.map((y, i) => ({ value: y.id, label: this.yearLabel(i) + (y.phase ? ' — ' + y.phase : '') })),
+      publications: d.publications.map(p => ({ value: p.id, label: p.title || T.untitled })),
+      setDate: ev => { const val = ev.target.value; this.setQuickAdd({ iso: val }); },
+      setYear: ev => { const val = ev.target.value; this.setQuickAdd({ yearId: val }); },
+      setPub: ev => { const val = ev.target.value; this.setQuickAdd({ pubId: val }); },
+      close,
+      backdrop: ev => { if (ev.target === ev.currentTarget) close(); },
+      keyDown: ev => {
+        if (ev.key === 'Escape') close();
+        else if (ev.key === 'Enter' && ev.target.tagName === 'INPUT') { ev.preventDefault(); this.saveQuickAdd(); }
+      },
+      save: () => this.saveQuickAdd()
     };
   }
 
@@ -525,7 +630,8 @@ class Component extends DCLogic {
     ['venueName', 'venueType', 'venueDeadline', 'venuePoints', 'venueStatus', 'bibAuthor', 'bibYear', 'bibTitle', 'bibSource', 'bibNote',
      'tripName', 'tripType', 'tripDeadline', 'tripDate', 'tripEndDate', 'tripPlace', 'tripLink', 'tripCost', 'tripCurrency', 'tripFunding', 'tripStatus',
      'fundName', 'fundType', 'fundDeadline', 'fundAmount', 'fundCurrency', 'fundSource', 'fundStatus', 'fundNote',
-     'taskText', 'taskPriority', 'taskDue', 'taskArea', 'pdfFiles'].forEach(n => { R[n] = this.ref(n); });
+     'taskText', 'taskPriority', 'taskDue', 'taskArea', 'pdfFiles',
+     'qaName', 'qaPriority', 'qaArea', 'qaTripType', 'qaEndDate', 'qaPlace', 'qaFundType', 'qaVenueType'].forEach(n => { R[n] = this.ref(n); });
 
     const view = this.state.view;
     const v = { dashboard: view === 'dashboard', plan: view === 'plan', publications: view === 'publications', trips: view === 'trips', funding: view === 'funding', todo: view === 'todo', notes: view === 'notes', settings: view === 'settings' };
@@ -535,6 +641,7 @@ class Component extends DCLogic {
     const base = {
       r: R, v,
       t: T, options: this.options(),
+      qa: { open: false },
       projectName: settings.projectName || this.props.projectName || 'Technologie postkwantowe w komunikacji satelitarnej',
       defaultCurrency: this.defaultCurrency(),
       phdStage: this.phdStage(),
@@ -751,6 +858,7 @@ class Component extends DCLogic {
       deadlinesSummary: T.deadlines30 + ' ' + within30Days,
       libraryHeading: T.pdfLibrary + ' — ' + d.library.length + ' ' + T.files,
       cal: this.calendar(terms),
+      qa: this.quickAddVm(d, T),
       upcoming: terms.slice(0, 6).map(t => ({ what: t.what, module: t.module, date: this.formatDate(t.iso), relative: this.relative(t.iso), color: this.dueColor(t.iso) })),
       noDeadlines: terms.length === 0,
       activeTasks: openTasks.slice(0, 6).map(taskVm),

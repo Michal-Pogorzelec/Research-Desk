@@ -80,6 +80,7 @@
               <div>
                 <div class="card-kicker">{{ t.calendar }}</div>
                 <div style="font-family:var(--font-heading);font-weight:600;font-size:22px;text-transform:capitalize">{{ cal.month }}</div>
+                <div class="text-muted" style="font-size:12px">{{ t.addEventHint }}</div>
               </div>
               <div style="display:flex;gap:6px">
                 <button type="button" class="btn btn-secondary" sc-camel-on-click="{{ cal.prev }}">‹</button>
@@ -91,7 +92,7 @@
             <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:var(--space-2)">
               <sc-for list="{{ cal.weekdays }}" as="weekday" hint-placeholder-count="7"><div class="eyebrow" style="padding:2px 4px">{{ weekday.name }}</div></sc-for>
               <sc-for list="{{ cal.days }}" as="day" hint-placeholder-count="35">
-                <button type="button" sc-camel-on-click="{{ day.select }}" class="cal-day" style="position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;min-height:60px;padding:6px 8px;border-radius:8px;cursor:pointer;font-family:var(--font-body);font-weight:500;font-size:13px;text-align:left;border:1px solid {{ day.border }};color:{{ day.fg }};background:{{ day.bg }}">
+                <button type="button" sc-camel-on-click="{{ day.select }}" sc-camel-on-double-click="{{ day.open }}" class="cal-day" style="position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;min-height:60px;padding:6px 8px;border-radius:8px;cursor:pointer;font-family:var(--font-body);font-weight:500;font-size:13px;text-align:left;border:1px solid {{ day.border }};color:{{ day.fg }};background:{{ day.bg }}">
                   <span style="display:flex;justify-content:space-between;align-items:baseline">
                     <span>{{ day.number }}</span>
                     <span style="font-family:var(--font-body);font-size:10px;color:var(--color-accent-700)">{{ day.count }}</span>
@@ -113,7 +114,10 @@
             </div>
 
             <div style="margin-top:var(--space-3)">
-              <div class="eyebrow" style="color:var(--color-text);font-weight:600">{{ cal.selectedLabel }}</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3)">
+                <div class="eyebrow" style="color:var(--color-text);font-weight:600">{{ cal.selectedLabel }}</div>
+                <button type="button" class="btn btn-ghost" sc-camel-on-click="{{ cal.addEvent }}">{{ t.addEvent }}</button>
+              </div>
               <sc-for list="{{ cal.events }}" as="event" hint-placeholder-count="2">
                 <div style="display:flex;justify-content:space-between;gap:var(--space-3);padding:5px 0;border-bottom:1px solid color-mix(in srgb, var(--color-text) 8%, transparent)">
                   <span style="font-size:13px">{{ event.what }}</span>
@@ -708,6 +712,80 @@
           </div>
         </div>
       </section>
+    </sc-if>
+
+    <sc-if value="{{ qa.open }}">
+      <div class="dialog-backdrop qa-backdrop" sc-camel-on-mouse-down="{{ qa.backdrop }}" sc-camel-on-key-down="{{ qa.keyDown }}">
+        <div class="dialog qa-dialog" role="dialog" aria-modal="true" aria-labelledby="qa-title">
+          <div>
+            <div class="dialog-title" id="qa-title">{{ t.newEvent }}</div>
+            <div class="text-muted" style="font-size:13px">{{ qa.label }}</div>
+          </div>
+
+          <div class="field"><label>{{ t.eventKind }}</label>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <sc-for list="{{ qa.kinds }}" as="kind" hint-placeholder-count="5">
+                <button type="button" class="chip" sc-camel-on-click="{{ kind.go }}" style="color:{{ kind.fg }};background:{{ kind.bg }}">{{ kind.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div class="field"><label>{{ qa.nameLabel }}</label>
+            <input class="input" ref="{{ r.qaName }}" placeholder="{{ qa.namePlaceholder }}">
+            <sc-if value="{{ qa.error }}">
+              <div style="font-size:12px;color:var(--color-danger);margin-top:4px">{{ t.nameRequired }}</div>
+            </sc-if>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)">
+            <div class="field"><label>{{ qa.dateLabel }}</label>
+              <input class="input" type="date" value="{{ qa.iso }}" sc-camel-on-change="{{ qa.setDate }}">
+            </div>
+            <sc-if value="{{ qa.isTodo }}">
+              <div class="field"><label>{{ t.lPriority }}</label>
+                <sc-raw-select class="input" ref="{{ r.qaPriority }}"><sc-for list="{{ options.priorities }}" as="opt" hint-placeholder-count="3"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+              </div>
+              <div class="field" style="grid-column:1/-1"><label>{{ t.lArea }}</label>
+                <sc-raw-select class="input" ref="{{ r.qaArea }}"><sc-for list="{{ options.areas }}" as="opt" hint-placeholder-count="5"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+              </div>
+            </sc-if>
+            <sc-if value="{{ qa.isTrip }}">
+              <div class="field"><label>{{ t.lTo }}</label>
+                <input class="input" type="date" ref="{{ r.qaEndDate }}">
+              </div>
+              <div class="field"><label>{{ t.lType }}</label>
+                <sc-raw-select class="input" ref="{{ r.qaTripType }}"><sc-for list="{{ options.tripTypes }}" as="opt" hint-placeholder-count="4"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+              </div>
+              <div class="field"><label>{{ t.lPlace }}</label>
+                <input class="input" ref="{{ r.qaPlace }}">
+              </div>
+            </sc-if>
+            <sc-if value="{{ qa.isMilestone }}">
+              <div class="field"><label>{{ t.lPlanYear }}</label>
+                <sc-raw-select class="input" value="{{ qa.yearId }}" sc-camel-on-change="{{ qa.setYear }}"><sc-for list="{{ qa.years }}" as="opt" hint-placeholder-count="4"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+              </div>
+            </sc-if>
+            <sc-if value="{{ qa.isFunding }}">
+              <div class="field"><label>{{ t.lType }}</label>
+                <sc-raw-select class="input" ref="{{ r.qaFundType }}"><sc-for list="{{ options.fundingTypes }}" as="opt" hint-placeholder-count="4"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+              </div>
+            </sc-if>
+            <sc-if value="{{ qa.isVenue }}">
+              <div class="field"><label>{{ t.lType }}</label>
+                <sc-raw-select class="input" ref="{{ r.qaVenueType }}"><sc-for list="{{ options.venueTypes }}" as="opt" hint-placeholder-count="3"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+              </div>
+              <div class="field" style="grid-column:1/-1"><label>{{ t.modPublication }}</label>
+                <sc-raw-select class="input" value="{{ qa.pubId }}" sc-camel-on-change="{{ qa.setPub }}"><sc-for list="{{ qa.publications }}" as="opt" hint-placeholder-count="2"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+              </div>
+            </sc-if>
+          </div>
+
+          <div class="dialog-actions">
+            <button type="button" class="btn btn-secondary" sc-camel-on-click="{{ qa.close }}">{{ t.cancel }}</button>
+            <button type="button" class="btn btn-primary" sc-camel-on-click="{{ qa.save }}">{{ t.add }}</button>
+          </div>
+        </div>
+      </div>
     </sc-if>
 
   </main>
