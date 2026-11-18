@@ -3487,7 +3487,7 @@ class Component extends DCLogic {
       cancel: P('Anuluj', 'Cancel'),
       nameRequired: P('Wpisz nazwę i datę wydarzenia.', 'Enter a name and a date for the event.'),
       upcomingDeadlines: P('Najbliższe terminy', 'Upcoming deadlines'),
-      noDatesText: P('Brak wpisanych dat. Terminy z planu, publikacji, wyjazdów, finansowania i listy TODO pojawiają się tutaj automatycznie.', 'No dates yet. Deadlines from the plan, publications, travel, funding and the TODO list appear here automatically.'),
+      noDatesText: P('Brak wpisanych dat. Terminy z planu, publikacji, wyjazdów i finansowania pojawiają się tutaj automatycznie.', 'No dates yet. Deadlines from the plan, publications, travel and funding appear here automatically.'),
       activeTasks: P('Aktywne TODO', 'Active TODO'),
       noActiveTasks: P('Brak aktywnych zadań.', 'No active tasks.'),
       fullList: P('Cała lista →', 'Full list →'),
@@ -4295,7 +4295,7 @@ class Component extends DCLogic {
     }));
 
     const filter = this.state.taskFilter;
-    const filtered = filter === 'all' ? d.todos : filter === 'done' ? d.todos.filter(t => t.done) : openTasks;
+    const filtered = this.sortTasks(filter === 'all' ? d.todos : filter === 'done' ? d.todos.filter(t => t.done) : openTasks);
     const taskVm = t => ({
       text: t.text, priority: t.priority, area: t.area || 'general', due: t.due || '',
       priorityLabel: this.label('priorities', t.priority),
@@ -4326,10 +4326,12 @@ class Component extends DCLogic {
       if (w.date) terms.push({ what: w.name, module: T.modTrip, iso: w.date });
       if (w.deadline && w.status === 'considered') terms.push({ what: T.appDeadlinePrefix + ' ' + w.name, module: T.modTrip, iso: w.deadline });
     });
-    openTasks.forEach(t => { if (t.due) terms.push({ what: t.text, module: T.modTodo, iso: t.due }); });
+    openTasks.forEach(t => { if (t.due) terms.push({ what: t.text, module: T.modTodo, iso: t.due, todo: true }); });
     d.plan.forEach(y => y.milestones.forEach(m => { if (m.due && !m.done) terms.push({ what: m.text, module: T.modPlan, iso: m.due }); }));
     terms.sort((a, b) => a.iso.localeCompare(b.iso));
-    const within30Days = terms.filter(x => { const n = this.daysUntil(x.iso); return n !== null && n >= 0 && n <= 30; }).length;
+    // TODO due dates show in the calendar and in the TODO list, not among the dashboard deadlines.
+    const deadlines = terms.filter(x => !x.todo);
+    const within30Days = deadlines.filter(x => { const n = this.daysUntil(x.iso); return n !== null && n >= 0 && n <= 30; }).length;
 
     return {
       ...base, nav, plan, education, educationTotal, noModules: d.education.length === 0, pub: dashboardPub && v.dashboard ? { ...pub, ...dashboardPub } : pub,
@@ -4339,9 +4341,9 @@ class Component extends DCLogic {
       libraryHeading: T.pdfLibrary + ' — ' + d.library.length + ' ' + T.files,
       cal: this.calendar(terms),
       qa: this.quickAddVm(d, T),
-      upcoming: terms.slice(0, 6).map(t => ({ what: t.what, module: t.module, date: this.formatDate(t.iso), relative: this.relative(t.iso), color: this.dueColor(t.iso) })),
-      noDeadlines: terms.length === 0,
-      activeTasks: openTasks.slice(0, 6).map(taskVm),
+      upcoming: deadlines.slice(0, 6).map(t => ({ what: t.what, module: t.module, date: this.formatDate(t.iso), relative: this.relative(t.iso), color: this.dueColor(t.iso) })),
+      noDeadlines: deadlines.length === 0,
+      activeTasks: this.sortTasks(openTasks).slice(0, 6).map(taskVm),
       noActiveTasks: openTasks.length === 0,
       tasks: filtered.map(taskVm),
       noFilteredTasks: filtered.length === 0,
@@ -4471,6 +4473,16 @@ class Component extends DCLogic {
     if (!text) return;
     this.update(x => { x.plan.find(p => p.id === yearId).milestones.push({ id: this.uid(), text, done: false, due: '' }); });
     this.clear(name);
+  }
+
+  // Open tasks first, by due date — overdue ones have the earliest dates, so they stay on top — then undated ones;
+  // the same date is ordered by priority. Done tasks (the "all" filter) go last.
+  sortTasks(tasks) {
+    const rank = { high: 0, medium: 1, low: 2 };
+    return tasks.slice().sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0)
+      || (a.due ? 0 : 1) - (b.due ? 0 : 1)
+      || (a.due || '').localeCompare(b.due || '')
+      || (rank[a.priority] ?? 1) - (rank[b.priority] ?? 1));
   }
 
   addTask() {
