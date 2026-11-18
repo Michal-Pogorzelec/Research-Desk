@@ -254,6 +254,83 @@
       </section>
     </sc-if>
 
+    <sc-if value="{{ v.education }}">
+      <section>
+        <header style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--space-4)">
+          <div style="max-width:66ch">
+            <div class="eyebrow">{{ t.module }}</div>
+            <h1 style="margin:0 0 var(--space-2)">{{ t.educationTitle }}</h1>
+            <p class="text-muted" style="margin:0">{{ t.educationIntro }}</p>
+          </div>
+          <div style="min-width:240px;text-align:right">
+            <div class="hours-counter" style="font-size:28px;color:{{ educationTotal.color }}">{{ educationTotal.counter }} <span class="text-muted" style="font-size:14px;font-weight:500">{{ t.hoursShort }}</span></div>
+            <div class="text-muted" style="font-size:13px">{{ educationTotal.summary }}</div>
+            <div class="hours-bar" style="margin-top:6px"><div class="hours-bar-entered" style="width:{{ educationTotal.pctEntered }}"></div><div class="hours-bar-done" style="width:{{ educationTotal.pctDone }}"></div></div>
+          </div>
+        </header>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:var(--space-6);margin-top:var(--space-6);align-items:start">
+          <sc-for list="{{ education }}" as="mod" hint-placeholder-count="3">
+            <div class="card blueprint">
+              <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-3)">
+                <div style="flex:1;min-width:0">
+                  <input class="input" sc-camel-read-only="{{ locked }}" value="{{ mod.name }}" sc-camel-on-change="{{ mod.setName }}" placeholder="{{ t.lModule }}" style="font-weight:600;font-size:16px;background:transparent;border-color:transparent;padding-left:0;min-height:28px">
+                  <div class="text-muted" style="display:flex;align-items:center;gap:6px;font-size:12px">
+                    <span>{{ t.hoursRequired }}</span>
+                    <input class="input" type="number" min="0" step="1" sc-camel-read-only="{{ locked }}" value="{{ mod.hours }}" sc-camel-on-change="{{ mod.setHours }}" style="width:76px;min-height:26px;font-size:12px;padding:2px 6px">
+                  </div>
+                </div>
+                <div style="flex:none;text-align:right">
+                  <div class="hours-counter" style="font-size:20px;color:{{ mod.color }}">{{ mod.counter }}</div>
+                  <div class="text-muted" style="font-size:12px">{{ mod.status }}</div>
+                </div>
+              </div>
+              <div class="hours-bar"><div class="hours-bar-entered" style="width:{{ mod.pctEntered }}"></div><div class="hours-bar-done" style="width:{{ mod.pctDone }}"></div></div>
+
+              <div style="display:flex;flex-direction:column;margin-top:var(--space-2)">
+                <sc-for list="{{ mod.courses }}" as="course" hint-placeholder-count="3">
+                  <div class="course-row">
+                    <input class="input" sc-camel-read-only="{{ locked }}" value="{{ course.name }}" sc-camel-on-change="{{ course.setName }}" style="flex:1;min-width:0;min-height:28px;font-size:14px;padding:2px 6px;background:transparent;border-color:transparent">
+                    <input class="input" type="number" min="0" step="1" sc-camel-read-only="{{ locked }}" value="{{ course.hours }}" sc-camel-on-change="{{ course.setHours }}" style="flex:none;width:64px;min-height:28px;font-size:13px;padding:2px 6px;text-align:right;background:transparent;border-color:transparent">
+                    <span class="text-muted" style="font-size:12px;flex:none">{{ t.hoursShort }}</span>
+                    <label class="course-passed" style="color:{{ course.passedColor }}">
+                      <button type="button" class="check" sc-camel-on-click="{{ course.toggle }}" style="background:{{ course.checkBg }};margin-top:0">{{ course.mark }}</button>
+                      <span>{{ t.coursePassed }}</span>
+                    </label>
+                    <button type="button" disabled="{{ locked }}" sc-camel-on-click="{{ course.remove }}" title="{{ t.deleteCourse }}" style="flex:none;border:0;background:transparent;cursor:pointer;color:var(--color-neutral-600);font-size:15px;line-height:1;padding:2px 4px">×</button>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ mod.empty }}">
+                <p class="card-body">{{ t.noCourses }}</p>
+              </sc-if>
+
+              <div style="display:flex;gap:6px;margin-top:var(--space-2)">
+                <input class="input" placeholder="{{ t.phCourse }}" ref="{{ mod.courseRef }}" sc-camel-on-key-down="{{ mod.courseKeyDown }}">
+                <input class="input" type="number" min="0" step="1" placeholder="{{ t.hoursShort }}" ref="{{ mod.hoursRef }}" sc-camel-on-key-down="{{ mod.courseKeyDown }}" style="flex:none;width:84px">
+                <button type="button" class="btn btn-secondary" sc-camel-on-click="{{ mod.addCourse }}" style="flex:none">{{ t.add }}</button>
+              </div>
+              <button type="button" class="btn btn-ghost" disabled="{{ locked }}" sc-camel-on-click="{{ mod.remove }}" style="align-self:flex-start">{{ t.deleteModule }}</button>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ noModules }}">
+          <p class="text-muted" style="margin-top:var(--space-6)">{{ t.noModules }}</p>
+        </sc-if>
+
+        <div class="card blueprint" style="margin-top:var(--space-6);max-width:720px">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div class="card-kicker">{{ t.newModule }}</div>
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--space-3)">
+            <div class="field" style="flex:1;min-width:240px"><label>{{ t.lModule }}</label><input class="input" ref="{{ r.moduleName }}" sc-camel-on-key-down="{{ moduleKeyDown }}" placeholder="{{ t.phModule }}"></div>
+            <div class="field" style="width:120px"><label>{{ t.lHours }}</label><input class="input" type="number" min="0" step="1" ref="{{ r.moduleHours }}" sc-camel-on-key-down="{{ moduleKeyDown }}" placeholder="45"></div>
+            <button type="button" class="btn btn-primary" sc-camel-on-click="{{ addModule }}">{{ t.addModule }}</button>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
     <sc-if value="{{ v.publications }}">
       <section>
         <div class="eyebrow">{{ t.module }}</div>
@@ -611,7 +688,7 @@
           </div>
           <div class="field"><label>{{ t.lDue }}</label><input type="date" class="input" ref="{{ r.taskDue }}"></div>
           <div class="field"><label>{{ t.lArea }}</label>
-            <sc-raw-select class="input" ref="{{ r.taskArea }}"><sc-for list="{{ options.areas }}" as="opt" hint-placeholder-count="5"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+            <sc-raw-select class="input" ref="{{ r.taskArea }}"><sc-for list="{{ options.areas }}" as="opt" hint-placeholder-count="6"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
           </div>
           <button type="button" class="btn btn-primary" sc-camel-on-click="{{ addTask }}">{{ t.addTask }}</button>
         </div>
@@ -630,7 +707,7 @@
               <input class="input" sc-camel-read-only="{{ locked }}" value="{{ task.text }}" sc-camel-on-change="{{ task.setText }}" style="flex:1;min-width:0;min-height:26px;font-size:14px;padding:2px 6px;background:transparent;border-color:transparent;text-decoration:{{ task.deco }};opacity:{{ task.op }}">
               <div style="flex:none;display:flex;align-items:center;gap:8px">
                 <sc-raw-select class="input" disabled="{{ locked }}" value="{{ task.area }}" sc-camel-on-change="{{ task.setArea }}" style="min-height:26px;font-size:12px;padding:2px 4px;background:transparent;border-color:transparent;width:118px">
-                  <sc-for list="{{ options.areas }}" as="opt" hint-placeholder-count="5"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
+                  <sc-for list="{{ options.areas }}" as="opt" hint-placeholder-count="6"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
                 </sc-raw-select>
                 <sc-raw-select class="input" disabled="{{ locked }}" value="{{ task.priority }}" sc-camel-on-change="{{ task.setPriority }}" style="min-height:26px;font-size:12px;padding:2px 4px;background:transparent;border-color:transparent;width:86px">
                   <sc-for list="{{ options.priorities }}" as="opt" hint-placeholder-count="3"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for>
@@ -746,7 +823,7 @@
                 <sc-raw-select class="input" ref="{{ r.qaPriority }}"><sc-for list="{{ options.priorities }}" as="opt" hint-placeholder-count="3"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
               </div>
               <div class="field" style="grid-column:1/-1"><label>{{ t.lArea }}</label>
-                <sc-raw-select class="input" ref="{{ r.qaArea }}"><sc-for list="{{ options.areas }}" as="opt" hint-placeholder-count="5"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
+                <sc-raw-select class="input" ref="{{ r.qaArea }}"><sc-for list="{{ options.areas }}" as="opt" hint-placeholder-count="6"><option value="{{ opt.value }}">{{ opt.label }}</option></sc-for></sc-raw-select>
               </div>
             </sc-if>
             <sc-if value="{{ qa.isTrip }}">

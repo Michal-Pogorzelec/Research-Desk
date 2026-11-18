@@ -10,7 +10,7 @@ const PORT = Number(process.env.PORT) || 8765;
 const DB_DIR = path.join(__dirname, 'db');
 const PDF_DIR = path.join(DB_DIR, 'pdf-library');
 const NOTES_DIR = path.join(DB_DIR, 'notes');
-const COLLECTIONS = ['plan', 'publications', 'trips', 'funding', 'todos', 'notes', 'library', 'settings'];
+const COLLECTIONS = ['plan', 'publications', 'trips', 'funding', 'todos', 'notes', 'library', 'settings', 'education'];
 const MAX_JSON_BYTES = 50 * 1024 * 1024;
 const ALLOWED_HOSTS = new Set(['localhost:' + PORT, '127.0.0.1:' + PORT, '[::1]:' + PORT]);
 

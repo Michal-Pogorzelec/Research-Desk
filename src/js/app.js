@@ -1,5 +1,5 @@
 class Component extends DCLogic {
-  COLLECTIONS = ['plan', 'publications', 'trips', 'funding', 'todos', 'notes', 'library', 'settings'];
+  COLLECTIONS = ['plan', 'publications', 'trips', 'funding', 'todos', 'notes', 'library', 'settings', 'education'];
 
   state = { view: 'dashboard', pubId: null, taskFilter: 'active', data: null, lastEdit: '', server: null, serverError: '', pdfInfo: '', monthOffset: 0, selectedDay: null, editing: false, quickAdd: null };
 
@@ -20,7 +20,7 @@ class Component extends DCLogic {
     fundingTypes: [['grant', 'Grant', 'Grant'], ['scholarship', 'Stypendium', 'Scholarship'], ['award', 'Nagroda', 'Award'], ['travel-grant', 'Dofinansowanie wyjazdu', 'Travel funding'], ['team-project', 'Projekt zespołowy', 'Team project'], ['other', 'Inne', 'Other']],
     fundingStatuses: [['considered', 'Rozważane', 'Considered'], ['in-preparation', 'Przygotowywane', 'In preparation'], ['submitted', 'Złożone', 'Submitted'], ['awarded', 'Przyznane', 'Awarded'], ['rejected', 'Odrzucone', 'Rejected']],
     priorities: [['medium', 'Średni', 'Medium'], ['high', 'Wysoki', 'High'], ['low', 'Niski', 'Low']],
-    areas: [['general', 'Ogólne', 'General'], ['plan', 'Plan', 'Plan'], ['publication', 'Publikacja', 'Publication'], ['trip', 'Wyjazd', 'Travel'], ['funding', 'Finansowanie', 'Funding']],
+    areas: [['general', 'Ogólne', 'General'], ['plan', 'Plan', 'Plan'], ['education', 'Kształcenie', 'Coursework'], ['publication', 'Publikacja', 'Publication'], ['trip', 'Wyjazd', 'Travel'], ['funding', 'Finansowanie', 'Funding']],
     currencies: [['PLN', 'PLN', 'PLN'], ['EUR', 'EUR', 'EUR']]
   };
 
@@ -80,6 +80,21 @@ class Component extends DCLogic {
       phasePlaceholder: P('nazwa fazy (opcjonalnie)', 'phase name (optional)'),
       deleteMilestone: P('Usuń etap', 'Delete milestone'),
       noMilestones: P('Brak etapów w tym roku.', 'No milestones for this year.'),
+      educationTitle: P('Program kształcenia', 'Training programme'),
+      educationIntro: P('Dodaj moduły programu szkoły doktorskiej z liczbą godzin do zaliczenia, a w nich konkretne przedmioty. Licznik modułu pokazuje godziny zaliczone, w nawiasie wszystkie wpisane, a po ukośniku wymagane — np. 5(15)/45.', 'Add the doctoral school’s programme modules with the hours to complete, then the courses in each. A module’s counter shows hours passed, all entered hours in brackets and the hours required after the slash — e.g. 5(15)/45.'),
+      hoursShort: P('godz.', 'h'),
+      hoursRequired: P('wymagane godz.', 'hours required'),
+      hoursPassed: P('Zaliczone', 'Passed'), hoursEntered: P('wpisane', 'entered'), hoursMissing: P('brakuje', 'missing'),
+      moduleComplete: P('moduł zaliczony ✓', 'module passed ✓'),
+      coursePassed: P('zaliczony', 'passed'),
+      newModule: P('Nowy moduł', 'New module'),
+      lModule: P('Nazwa modułu', 'Module name'), lHours: P('Godziny', 'Hours'),
+      phModule: P('np. Moduł podstawowy — obowiązkowy', 'e.g. Core module — compulsory'),
+      phCourse: P('Nowy przedmiot…', 'New course…'),
+      addModule: P('Dodaj moduł', 'Add module'), deleteModule: P('Usuń moduł', 'Delete module'), deleteCourse: P('Usuń przedmiot', 'Delete course'),
+      confirmDeleteModule: P('Usunąć moduł „{name}” razem z jego przedmiotami?', 'Delete the module “{name}” together with its courses?'),
+      noCourses: P('Brak przedmiotów — dodaj pierwszy poniżej.', 'No courses yet — add the first one below.'),
+      noModules: P('Brak modułów. Dodaj pierwszy moduł programu poniżej.', 'No modules yet. Add the first programme module below.'),
       newMilestonePlaceholder: P('Nowy etap…', 'New milestone…'),
       addYear: P('+ Kolejny rok', '+ Another year'),
       publicationsTitle: P('Publikacje', 'Publications'),
@@ -152,7 +167,7 @@ class Component extends DCLogic {
       phTask: P('Co trzeba zrobić?', 'What needs doing?'),
       phNoteTitle: P('Tytuł notatki', 'Note title'),
       phText: P('Treść…', 'Text…'),
-      navDashboard: P('Pulpit', 'Dashboard'), navPlan: P('Plan 4 lata', '4-year plan'),
+      navDashboard: P('Pulpit', 'Dashboard'), navPlan: P('Plan 4 lata', '4-year plan'), navEducation: P('Kształcenie', 'Coursework'),
       navPublications: P('Publikacje', 'Publications'), navTrips: P('Wyjazdy', 'Travel'),
       navFunding: P('Finansowanie', 'Funding'), navTodo: P('TODO', 'TODO'),
       navNotes: P('Notatki', 'Notes'), navSettings: P('Ustawienia (Settings)', 'Settings'),
@@ -387,6 +402,7 @@ class Component extends DCLogic {
     }
     data.publications.forEach(p => { if (!Array.isArray(p.bibliography)) p.bibliography = []; if (!Array.isArray(p.venues)) p.venues = []; });
     data.plan.forEach(y => { if (!Array.isArray(y.milestones)) y.milestones = []; });
+    data.education.forEach(m => { if (!Array.isArray(m.courses)) m.courses = []; });
     return data;
   }
 
@@ -548,6 +564,7 @@ class Component extends DCLogic {
       trips: [],
       funding: [],
       todos: [],
+      education: [],
       notes: [],
       library: [],
       settings: { projectName: '', language: 'pl', startYear: Number(this.props.startYear || 2026), currency: this.props.defaultCurrency || 'PLN' }
@@ -631,10 +648,11 @@ class Component extends DCLogic {
      'tripName', 'tripType', 'tripDeadline', 'tripDate', 'tripEndDate', 'tripPlace', 'tripLink', 'tripCost', 'tripCurrency', 'tripFunding', 'tripStatus',
      'fundName', 'fundType', 'fundDeadline', 'fundAmount', 'fundCurrency', 'fundSource', 'fundStatus', 'fundNote',
      'taskText', 'taskPriority', 'taskDue', 'taskArea', 'pdfFiles',
+     'moduleName', 'moduleHours',
      'qaName', 'qaPriority', 'qaArea', 'qaTripType', 'qaEndDate', 'qaPlace', 'qaFundType', 'qaVenueType'].forEach(n => { R[n] = this.ref(n); });
 
     const view = this.state.view;
-    const v = { dashboard: view === 'dashboard', plan: view === 'plan', publications: view === 'publications', trips: view === 'trips', funding: view === 'funding', todo: view === 'todo', notes: view === 'notes', settings: view === 'settings' };
+    const v = { dashboard: view === 'dashboard', plan: view === 'plan', education: view === 'education', publications: view === 'publications', trips: view === 'trips', funding: view === 'funding', todo: view === 'todo', notes: view === 'notes', settings: view === 'settings' };
     const T = this.dict();
     const server = this.state.server;
     const settings = (d || {}).settings || {};
@@ -675,9 +693,11 @@ class Component extends DCLogic {
     const openTasks = d.todos.filter(t => !t.done);
     const milestonesDone = d.plan.reduce((a, y) => a + y.milestones.filter(m => m.done).length, 0);
     const milestonesTotal = d.plan.reduce((a, y) => a + y.milestones.length, 0);
+    const eduTotal = this.sumHours(d.education);
     const navDef = [
       ['dashboard', T.navDashboard, ''],
       ['plan', T.navPlan, milestonesDone + '/' + milestonesTotal],
+      ['education', T.navEducation, this.hoursCounter(eduTotal)],
       ['publications', T.navPublications, String(d.publications.length)],
       ['trips', T.navTrips, String(d.trips.length)],
       ['funding', T.navFunding, String(d.funding.length)],
@@ -720,6 +740,45 @@ class Component extends DCLogic {
         }))
       };
     });
+
+    const hoursColor = h => h.required > 0 && h.done >= h.required ? 'var(--color-success)' : 'var(--color-accent-700)';
+    const hoursStatus = h => h.required > 0 && h.done >= h.required ? T.moduleComplete
+      : T.hoursMissing + ' ' + this.formatHours(Math.max(0, h.required - h.done)) + ' ' + T.hoursShort;
+    const education = d.education.map(mod => {
+      const h = this.moduleHours(mod);
+      const findCourse = (x, id) => x.education.find(m => m.id === mod.id).courses.find(c => c.id === id);
+      return {
+        id: mod.id, name: mod.name, hours: mod.hours === '' || mod.hours == null ? '' : String(mod.hours),
+        counter: this.hoursCounter(h), color: hoursColor(h), status: hoursStatus(h),
+        pctDone: this.hoursPct(h.done, h.required), pctEntered: this.hoursPct(h.entered, h.required),
+        empty: mod.courses.length === 0,
+        courseRef: this.ref('course_' + mod.id), hoursRef: this.ref('courseHours_' + mod.id),
+        addCourse: () => this.addCourse(mod.id),
+        courseKeyDown: e => { if (e.key === 'Enter') this.addCourse(mod.id); },
+        setName: ev => { const val = ev.target.value; this.update(x => { x.education.find(m => m.id === mod.id).name = val; }); },
+        setHours: ev => { const val = ev.target.value; this.update(x => { x.education.find(m => m.id === mod.id).hours = val === '' ? '' : this.hoursValue(val); }); },
+        remove: () => {
+          if (!confirm(T.confirmDeleteModule.replace('{name}', mod.name || T.untitled))) return;
+          this.update(x => { x.education = x.education.filter(m => m.id !== mod.id); });
+        },
+        courses: mod.courses.map(c => ({
+          name: c.name, hours: c.hours === '' || c.hours == null ? '' : String(c.hours),
+          mark: c.done ? '✓' : '',
+          checkBg: c.done ? 'var(--color-accent)' : 'transparent',
+          passedColor: c.done ? 'var(--color-success)' : 'var(--color-neutral-600)',
+          setName: ev => { const val = ev.target.value; this.update(x => { findCourse(x, c.id).name = val; }); },
+          setHours: ev => { const val = ev.target.value; this.update(x => { findCourse(x, c.id).hours = val === '' ? '' : this.hoursValue(val); }); },
+          toggle: () => this.update(x => { const q = findCourse(x, c.id); q.done = !q.done; }),
+          remove: () => this.update(x => { const m = x.education.find(q => q.id === mod.id); m.courses = m.courses.filter(q => q.id !== c.id); })
+        }))
+      };
+    });
+    const educationTotal = {
+      counter: this.hoursCounter(eduTotal), color: hoursColor(eduTotal),
+      summary: T.hoursPassed + ' ' + this.formatHours(eduTotal.done) + ' ' + T.of + ' ' + this.formatHours(eduTotal.required) + ' ' + T.hoursShort
+        + ' · ' + T.hoursEntered + ' ' + this.formatHours(eduTotal.entered),
+      pctDone: this.hoursPct(eduTotal.done, eduTotal.required), pctEntered: this.hoursPct(eduTotal.entered, eduTotal.required)
+    };
 
     const pubRaw = d.publications.find(p => p.id === this.state.pubId) || d.publications.find(p => p.current) || d.publications[0] || null;
     const currentRaw = d.publications.find(p => p.current) || pubRaw;
@@ -852,7 +911,7 @@ class Component extends DCLogic {
     const within30Days = terms.filter(x => { const n = this.daysUntil(x.iso); return n !== null && n >= 0 && n <= 30; }).length;
 
     return {
-      ...base, nav, plan, pub: dashboardPub && v.dashboard ? { ...pub, ...dashboardPub } : pub,
+      ...base, nav, plan, education, educationTotal, noModules: d.education.length === 0, pub: dashboardPub && v.dashboard ? { ...pub, ...dashboardPub } : pub,
       publicationTabs, trips, funding, notes,
       planSummary: T.planSummary + ' ' + milestonesDone + ' ' + T.of + ' ' + milestonesTotal + ' ' + T.milestones,
       deadlinesSummary: T.deadlines30 + ' ' + within30Days,
@@ -932,6 +991,8 @@ class Component extends DCLogic {
         this.update(x => { x.funding.push(rec); });
         this.clear('fundName', 'fundDeadline', 'fundAmount', 'fundSource', 'fundNote');
       },
+      addModule: () => this.addModule(),
+      moduleKeyDown: e => { if (e.key === 'Enter') this.addModule(); },
       addTask: () => this.addTask(),
       taskKeyDown: e => { if (e.key === 'Enter') this.addTask(); },
       addNote: () => this.update(x => { x.notes.unshift({ id: this.uid(), title: '', text: '', date: new Date().toISOString() }); })
@@ -944,6 +1005,43 @@ class Component extends DCLogic {
     const rec = { id: this.uid(), author: this.val('bibAuthor'), year: this.val('bibYear'), title, source: this.val('bibSource'), note: this.val('bibNote') };
     this.update(x => { x.publications.find(q => q.id === pubRaw.id).bibliography.push(rec); });
     this.clear('bibAuthor', 'bibYear', 'bibTitle', 'bibSource', 'bibNote');
+  }
+
+  /* ——— coursework: modules with required hours, courses that count once passed ——— */
+
+  moduleHours(mod) {
+    const hours = c => this.hoursValue(c.hours);
+    return {
+      required: this.hoursValue(mod.hours),
+      entered: mod.courses.reduce((a, c) => a + hours(c), 0),
+      done: mod.courses.filter(c => c.done).reduce((a, c) => a + hours(c), 0)
+    };
+  }
+  sumHours(modules) {
+    return modules.map(m => this.moduleHours(m))
+      .reduce((a, h) => ({ required: a.required + h.required, entered: a.entered + h.entered, done: a.done + h.done }), { required: 0, entered: 0, done: 0 });
+  }
+  hoursValue(v) { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) && n > 0 ? n : 0; }
+  formatHours(n) { return n.toLocaleString(this.locale(), { maximumFractionDigits: 1 }); }
+  // passed(entered)/required — the bracket only when some entered hours are not passed yet, e.g. 0(5)/45.
+  hoursCounter(h) {
+    return this.formatHours(h.done) + (h.entered > h.done ? '(' + this.formatHours(h.entered) + ')' : '') + '/' + this.formatHours(h.required);
+  }
+  hoursPct(part, required) { return required > 0 ? Math.min(100, Math.round((part / required) * 100)) + '%' : '0%'; }
+
+  addModule() {
+    const name = this.val('moduleName');
+    if (!name) return;
+    this.update(x => { x.education.push({ id: this.uid(), name, hours: this.hoursValue(this.val('moduleHours')), courses: [] }); });
+    this.clear('moduleName', 'moduleHours');
+  }
+
+  addCourse(moduleId) {
+    const name = this.val('course_' + moduleId);
+    if (!name) return;
+    const rec = { id: this.uid(), name, hours: this.hoursValue(this.val('courseHours_' + moduleId)), done: false };
+    this.update(x => { x.education.find(m => m.id === moduleId).courses.push(rec); });
+    this.clear('course_' + moduleId, 'courseHours_' + moduleId);
   }
 
   addMilestone(yearId) {
